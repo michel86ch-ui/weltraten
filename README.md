@@ -58,7 +58,13 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
 - **Runden:** `locations.json` enthält Koordinaten mit bekannt guter
   Street-View-Abdeckung plus dem tatsächlichen Land. Pro Spiel werden
   zufällig 5 davon gezogen (`ROUNDS_PER_GAME` in `script.js`).
-- **Scoring:** Bei exaktem Landtreffer gibt's die vollen 5000 Punkte
+- **Schweiz-Modus:** 60 der Einträge sind Schweizer Städte/Dörfer mit einem
+  zusätzlichen `place`-Feld. Landet eine Runde dort, schaltet das Dropdown
+  automatisch von der Länderliste auf eine Liste von Schweizer Orten um –
+  gefragt ist dann der genaue Ort, nicht "Schweiz". Scoring läuft über einen
+  engeren Distanz-Massstab (`SCORE_DECAY_KM_SWISS`), weil die Schweiz
+  geografisch viel kleiner ist als ein Land-Vergleich auf Weltniveau.
+- **Scoring:** Bei exaktem Treffer gibt's die vollen 5000 Punkte
   (`MAX_POINTS`). Sonst wird die Distanz zwischen den Zentroiden
   (`country-centroids.json`) von geratenem und echtem Land berechnet
   (Haversine-Formel) und über eine e-Funktion in Punkte umgerechnet –
@@ -67,14 +73,23 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
 - **Bewegung gesperrt:** `linksControl: false` verhindert, dass man im
   Panorama zum Nachbarbild weiterläuft – sonst ließe sich über Ortsschilder
   o. Ä. leicht schummeln.
+- **Keine Wiederholungen:** Die Standorte werden wie ein Kartenstapel gezogen
+  (`drawLocations()` in `script.js`) – kein Ort kommt zweimal dran, bevor
+  nicht alle anderen einmal gezeigt wurden. Der Fortschritt wird in
+  `localStorage` gespeichert und bleibt so auch über mehrere Spiele/Browser-
+  Sessions hinweg erhalten.
 
 ## Bekannte Einschränkungen / nächste Schritte
 
-- Nur 24 Beispiel-Standorte und ~55 Länder-Zentroide sind hinterlegt – für
-  echten Wiederspielwert sollte die Liste auf mehrere hundert Orte und alle
-  ~195 Länder erweitert werden. Die Zentroid-Koordinaten hier sind grobe
-  Näherungswerte; für ein faires Scoring lohnt sich ein Ersatz durch einen
-  geprüften offenen Datensatz mit echten Länder-Centroiden.
+- Insgesamt 115 Standorte hinterlegt (55 Länder-Runden + 60 Schweizer
+  Städte/Dörfer für den Schweiz-Modus) und ~58 Länder-Zentroide
+  (`locations.json`, `country-centroids.json`) – für noch mehr Abwechslung
+  lohnt sich eine weitere Erweiterung. Jeder Eintrag in `locations.json`
+  braucht eine eindeutige `id`, damit das Anti-Wiederholungssystem (siehe
+  unten) funktioniert; Schweizer Orte zusätzlich ein `place`-Feld. Die
+  Zentroid-Koordinaten sind grobe Näherungswerte; für faireres Scoring lohnt
+  sich ein Ersatz durch einen geprüften offenen Datensatz mit echten
+  Länder-Centroiden.
 - Kein globales Leaderboard: Punkte gelten nur für die laufende
   Browser-Session. Für ein öffentliches Ranking bräuchte es ein simples
   Backend (z. B. Firebase Firestore oder Supabase mit anonymem Zugriff) –

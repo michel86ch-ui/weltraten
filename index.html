@@ -25,6 +25,7 @@
   <!-- SPIEL -->
   <section id="game-screen" class="screen hidden">
     <div id="streetview"></div>
+    <div id="pano-loading" class="pano-loading hidden">Panorama wird geladen …</div>
 
     <div id="hud">
       <span id="hud-player"></span>
@@ -36,7 +37,7 @@
       <select id="guess-select" required>
         <option value="" disabled selected>Land wählen …</option>
       </select>
-      <button type="submit" class="btn-primary">Raten</button>
+      <button type="submit" id="guess-submit" class="btn-primary">Raten</button>
     </form>
   </section>
 

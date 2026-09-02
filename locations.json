@@ -1,26 +1,752 @@
 [
-  { "lat": 48.8584, "lng": 2.2945, "country": "Frankreich" },
-  { "lat": -33.8568, "lng": 151.2153, "country": "Australien" },
-  { "lat": -22.9519, "lng": -43.2105, "country": "Brasilien" },
-  { "lat": 40.6892, "lng": -74.0445, "country": "USA" },
-  { "lat": 41.8902, "lng": 12.4922, "country": "Italien" },
-  { "lat": 51.5007, "lng": -0.1246, "country": "Vereinigtes Königreich" },
-  { "lat": 35.6586, "lng": 139.7454, "country": "Japan" },
-  { "lat": -13.1631, "lng": -72.5450, "country": "Peru" },
-  { "lat": 27.1751, "lng": 78.0421, "country": "Indien" },
-  { "lat": 59.9139, "lng": 10.7522, "country": "Norwegen" },
-  { "lat": 55.7520, "lng": 37.6175, "country": "Russland" },
-  { "lat": -34.6037, "lng": -58.3816, "country": "Argentinien" },
-  { "lat": 37.9715, "lng": 23.7267, "country": "Griechenland" },
-  { "lat": 52.5163, "lng": 13.3777, "country": "Deutschland" },
-  { "lat": 47.3769, "lng": 8.5417, "country": "Schweiz" },
-  { "lat": 30.0444, "lng": 31.2357, "country": "Ägypten" },
-  { "lat": 1.2839, "lng": 103.8607, "country": "Singapur" },
-  { "lat": 19.4326, "lng": -99.1332, "country": "Mexiko" },
-  { "lat": -1.2921, "lng": 36.8219, "country": "Kenia" },
-  { "lat": 60.1699, "lng": 24.9384, "country": "Finnland" },
-  { "lat": 50.0755, "lng": 14.4378, "country": "Tschechien" },
-  { "lat": 41.0082, "lng": 28.9784, "country": "Türkei" },
-  { "lat": -36.8485, "lng": 174.7633, "country": "Neuseeland" },
-  { "lat": 25.276987, "lng": 55.296249, "country": "Vereinigte Arabische Emirate" }
+  {
+    "id": "fr-paris",
+    "lat": 48.8584,
+    "lng": 2.2945,
+    "country": "Frankreich"
+  },
+  {
+    "id": "au-sydney",
+    "lat": -33.8568,
+    "lng": 151.2153,
+    "country": "Australien"
+  },
+  {
+    "id": "br-rio",
+    "lat": -22.9519,
+    "lng": -43.2105,
+    "country": "Brasilien"
+  },
+  {
+    "id": "us-nyc",
+    "lat": 40.6892,
+    "lng": -74.0445,
+    "country": "USA"
+  },
+  {
+    "id": "it-rome",
+    "lat": 41.9715,
+    "lng": 12.4922,
+    "country": "Italien"
+  },
+  {
+    "id": "gb-london",
+    "lat": 51.5007,
+    "lng": -0.1246,
+    "country": "Vereinigtes Königreich"
+  },
+  {
+    "id": "jp-tokyo",
+    "lat": 35.6586,
+    "lng": 139.7454,
+    "country": "Japan"
+  },
+  {
+    "id": "pe-machupicchu",
+    "lat": -13.1631,
+    "lng": -72.545,
+    "country": "Peru"
+  },
+  {
+    "id": "in-tajmahal",
+    "lat": 27.1751,
+    "lng": 78.0421,
+    "country": "Indien"
+  },
+  {
+    "id": "no-oslo",
+    "lat": 59.9139,
+    "lng": 10.7522,
+    "country": "Norwegen"
+  },
+  {
+    "id": "ru-moscow",
+    "lat": 55.752,
+    "lng": 37.6175,
+    "country": "Russland"
+  },
+  {
+    "id": "ar-buenosaires",
+    "lat": -34.6037,
+    "lng": -58.3816,
+    "country": "Argentinien"
+  },
+  {
+    "id": "gr-athens",
+    "lat": 37.9715,
+    "lng": 23.7267,
+    "country": "Griechenland"
+  },
+  {
+    "id": "de-berlin",
+    "lat": 52.5163,
+    "lng": 13.3777,
+    "country": "Deutschland"
+  },
+  {
+    "id": "eg-cairo",
+    "lat": 30.0444,
+    "lng": 31.2357,
+    "country": "Ägypten"
+  },
+  {
+    "id": "sg-singapore",
+    "lat": 1.2839,
+    "lng": 103.8607,
+    "country": "Singapur"
+  },
+  {
+    "id": "mx-mexicocity",
+    "lat": 19.4326,
+    "lng": -99.1332,
+    "country": "Mexiko"
+  },
+  {
+    "id": "ke-nairobi",
+    "lat": -1.2921,
+    "lng": 36.8219,
+    "country": "Kenia"
+  },
+  {
+    "id": "fi-helsinki",
+    "lat": 60.1699,
+    "lng": 24.9384,
+    "country": "Finnland"
+  },
+  {
+    "id": "cz-prague",
+    "lat": 50.0755,
+    "lng": 14.4378,
+    "country": "Tschechien"
+  },
+  {
+    "id": "tr-istanbul",
+    "lat": 41.0082,
+    "lng": 28.9784,
+    "country": "Türkei"
+  },
+  {
+    "id": "nz-auckland",
+    "lat": -36.8485,
+    "lng": 174.7633,
+    "country": "Neuseeland"
+  },
+  {
+    "id": "ae-dubai",
+    "lat": 25.276987,
+    "lng": 55.296249,
+    "country": "Vereinigte Arabische Emirate"
+  },
+  {
+    "id": "es-madrid",
+    "lat": 40.4155,
+    "lng": -3.7074,
+    "country": "Spanien"
+  },
+  {
+    "id": "pt-lisbon",
+    "lat": 38.7075,
+    "lng": -9.1364,
+    "country": "Portugal"
+  },
+  {
+    "id": "pl-krakow",
+    "lat": 50.0617,
+    "lng": 19.9373,
+    "country": "Polen"
+  },
+  {
+    "id": "at-vienna",
+    "lat": 48.2082,
+    "lng": 16.3738,
+    "country": "Österreich"
+  },
+  {
+    "id": "nl-amsterdam",
+    "lat": 52.3731,
+    "lng": 4.8926,
+    "country": "Niederlande"
+  },
+  {
+    "id": "be-brussels",
+    "lat": 50.8467,
+    "lng": 4.3525,
+    "country": "Belgien"
+  },
+  {
+    "id": "se-stockholm",
+    "lat": 59.3251,
+    "lng": 18.0711,
+    "country": "Schweden"
+  },
+  {
+    "id": "dk-copenhagen",
+    "lat": 55.6805,
+    "lng": 12.5934,
+    "country": "Dänemark"
+  },
+  {
+    "id": "ie-dublin",
+    "lat": 53.3454,
+    "lng": -6.2674,
+    "country": "Irland"
+  },
+  {
+    "id": "hu-budapest",
+    "lat": 47.4979,
+    "lng": 19.0402,
+    "country": "Ungarn"
+  },
+  {
+    "id": "hr-dubrovnik",
+    "lat": 42.6407,
+    "lng": 18.1077,
+    "country": "Kroatien"
+  },
+  {
+    "id": "ca-toronto",
+    "lat": 43.6426,
+    "lng": -79.3871,
+    "country": "Kanada"
+  },
+  {
+    "id": "kr-seoul",
+    "lat": 37.5759,
+    "lng": 126.9769,
+    "country": "Südkorea"
+  },
+  {
+    "id": "th-bangkok",
+    "lat": 13.7437,
+    "lng": 100.4888,
+    "country": "Thailand"
+  },
+  {
+    "id": "vn-hanoi",
+    "lat": 21.0285,
+    "lng": 105.8542,
+    "country": "Vietnam"
+  },
+  {
+    "id": "id-jakarta",
+    "lat": -6.1754,
+    "lng": 106.8272,
+    "country": "Indonesien"
+  },
+  {
+    "id": "ph-manila",
+    "lat": 14.5832,
+    "lng": 120.9794,
+    "country": "Philippinen"
+  },
+  {
+    "id": "my-kualalumpur",
+    "lat": 3.1579,
+    "lng": 101.7116,
+    "country": "Malaysia"
+  },
+  {
+    "id": "za-capetown",
+    "lat": -33.9036,
+    "lng": 18.4199,
+    "country": "Südafrika"
+  },
+  {
+    "id": "ma-marrakech",
+    "lat": 31.6258,
+    "lng": -7.9891,
+    "country": "Marokko"
+  },
+  {
+    "id": "ng-lagos",
+    "lat": 6.4531,
+    "lng": 3.3958,
+    "country": "Nigeria"
+  },
+  {
+    "id": "cl-santiago",
+    "lat": -33.4372,
+    "lng": -70.6506,
+    "country": "Chile"
+  },
+  {
+    "id": "co-bogota",
+    "lat": 4.5981,
+    "lng": -74.0758,
+    "country": "Kolumbien"
+  },
+  {
+    "id": "is-reykjavik",
+    "lat": 64.1466,
+    "lng": -21.9426,
+    "country": "Island"
+  },
+  {
+    "id": "il-telaviv",
+    "lat": 32.0522,
+    "lng": 34.7515,
+    "country": "Israel"
+  },
+  {
+    "id": "ua-lviv",
+    "lat": 49.8397,
+    "lng": 24.0297,
+    "country": "Ukraine"
+  },
+  {
+    "id": "ro-bucharest",
+    "lat": 44.4268,
+    "lng": 26.1025,
+    "country": "Rumänien"
+  },
+  {
+    "id": "bg-sofia",
+    "lat": 42.6957,
+    "lng": 23.3327,
+    "country": "Bulgarien"
+  },
+  {
+    "id": "si-ljubljana",
+    "lat": 46.0511,
+    "lng": 14.5051,
+    "country": "Slowenien"
+  },
+  {
+    "id": "ee-tallinn",
+    "lat": 59.437,
+    "lng": 24.7536,
+    "country": "Estland"
+  },
+  {
+    "id": "lv-riga",
+    "lat": 56.9496,
+    "lng": 24.1052,
+    "country": "Lettland"
+  },
+  {
+    "id": "lt-vilnius",
+    "lat": 54.6872,
+    "lng": 25.2797,
+    "country": "Litauen"
+  },
+  {
+    "id": "ch-zuerich",
+    "lat": 47.3769,
+    "lng": 8.5417,
+    "country": "Schweiz",
+    "place": "Zürich"
+  },
+  {
+    "id": "ch-bern",
+    "lat": 46.948,
+    "lng": 7.4474,
+    "country": "Schweiz",
+    "place": "Bern"
+  },
+  {
+    "id": "ch-basel",
+    "lat": 47.5596,
+    "lng": 7.5886,
+    "country": "Schweiz",
+    "place": "Basel"
+  },
+  {
+    "id": "ch-genf",
+    "lat": 46.2044,
+    "lng": 6.1432,
+    "country": "Schweiz",
+    "place": "Genf"
+  },
+  {
+    "id": "ch-lausanne",
+    "lat": 46.5197,
+    "lng": 6.6323,
+    "country": "Schweiz",
+    "place": "Lausanne"
+  },
+  {
+    "id": "ch-luzern",
+    "lat": 47.0502,
+    "lng": 8.3093,
+    "country": "Schweiz",
+    "place": "Luzern"
+  },
+  {
+    "id": "ch-stgallen",
+    "lat": 47.4245,
+    "lng": 9.3767,
+    "country": "Schweiz",
+    "place": "St. Gallen"
+  },
+  {
+    "id": "ch-winterthur",
+    "lat": 47.5,
+    "lng": 8.75,
+    "country": "Schweiz",
+    "place": "Winterthur"
+  },
+  {
+    "id": "ch-lugano",
+    "lat": 46.0037,
+    "lng": 8.9511,
+    "country": "Schweiz",
+    "place": "Lugano"
+  },
+  {
+    "id": "ch-biel",
+    "lat": 47.1368,
+    "lng": 7.2468,
+    "country": "Schweiz",
+    "place": "Biel/Bienne"
+  },
+  {
+    "id": "ch-thun",
+    "lat": 46.758,
+    "lng": 7.628,
+    "country": "Schweiz",
+    "place": "Thun"
+  },
+  {
+    "id": "ch-koeniz",
+    "lat": 46.9241,
+    "lng": 7.4144,
+    "country": "Schweiz",
+    "place": "Köniz"
+  },
+  {
+    "id": "ch-fribourg",
+    "lat": 46.8065,
+    "lng": 7.1619,
+    "country": "Schweiz",
+    "place": "Fribourg"
+  },
+  {
+    "id": "ch-schaffhausen",
+    "lat": 47.697,
+    "lng": 8.635,
+    "country": "Schweiz",
+    "place": "Schaffhausen"
+  },
+  {
+    "id": "ch-chur",
+    "lat": 46.8508,
+    "lng": 9.532,
+    "country": "Schweiz",
+    "place": "Chur"
+  },
+  {
+    "id": "ch-neuenburg",
+    "lat": 46.99,
+    "lng": 6.9293,
+    "country": "Schweiz",
+    "place": "Neuenburg"
+  },
+  {
+    "id": "ch-uster",
+    "lat": 47.347,
+    "lng": 8.7207,
+    "country": "Schweiz",
+    "place": "Uster"
+  },
+  {
+    "id": "ch-sion",
+    "lat": 46.2331,
+    "lng": 7.3606,
+    "country": "Schweiz",
+    "place": "Sion"
+  },
+  {
+    "id": "ch-emmen",
+    "lat": 47.081,
+    "lng": 8.304,
+    "country": "Schweiz",
+    "place": "Emmen"
+  },
+  {
+    "id": "ch-zug",
+    "lat": 47.1662,
+    "lng": 8.5155,
+    "country": "Schweiz",
+    "place": "Zug"
+  },
+  {
+    "id": "ch-yverdon",
+    "lat": 46.7785,
+    "lng": 6.6413,
+    "country": "Schweiz",
+    "place": "Yverdon-les-Bains"
+  },
+  {
+    "id": "ch-kriens",
+    "lat": 47.0333,
+    "lng": 8.2833,
+    "country": "Schweiz",
+    "place": "Kriens"
+  },
+  {
+    "id": "ch-rapperswil",
+    "lat": 47.2267,
+    "lng": 8.818,
+    "country": "Schweiz",
+    "place": "Rapperswil-Jona"
+  },
+  {
+    "id": "ch-duebendorf",
+    "lat": 47.3979,
+    "lng": 8.6183,
+    "country": "Schweiz",
+    "place": "Dübendorf"
+  },
+  {
+    "id": "ch-dietikon",
+    "lat": 47.4013,
+    "lng": 8.4001,
+    "country": "Schweiz",
+    "place": "Dietikon"
+  },
+  {
+    "id": "ch-frauenfeld",
+    "lat": 47.559,
+    "lng": 8.899,
+    "country": "Schweiz",
+    "place": "Frauenfeld"
+  },
+  {
+    "id": "ch-wetzikon",
+    "lat": 47.3228,
+    "lng": 8.7982,
+    "country": "Schweiz",
+    "place": "Wetzikon"
+  },
+  {
+    "id": "ch-baar",
+    "lat": 47.1962,
+    "lng": 8.5273,
+    "country": "Schweiz",
+    "place": "Baar"
+  },
+  {
+    "id": "ch-waedenswil",
+    "lat": 47.2298,
+    "lng": 8.6716,
+    "country": "Schweiz",
+    "place": "Wädenswil"
+  },
+  {
+    "id": "ch-wil",
+    "lat": 47.4632,
+    "lng": 9.0459,
+    "country": "Schweiz",
+    "place": "Wil"
+  },
+  {
+    "id": "ch-bulle",
+    "lat": 46.6187,
+    "lng": 7.0578,
+    "country": "Schweiz",
+    "place": "Bulle"
+  },
+  {
+    "id": "ch-kreuzlingen",
+    "lat": 47.648,
+    "lng": 9.175,
+    "country": "Schweiz",
+    "place": "Kreuzlingen"
+  },
+  {
+    "id": "ch-bellinzona",
+    "lat": 46.1944,
+    "lng": 9.0175,
+    "country": "Schweiz",
+    "place": "Bellinzona"
+  },
+  {
+    "id": "ch-locarno",
+    "lat": 46.167,
+    "lng": 8.7943,
+    "country": "Schweiz",
+    "place": "Locarno"
+  },
+  {
+    "id": "ch-nyon",
+    "lat": 46.3833,
+    "lng": 6.2333,
+    "country": "Schweiz",
+    "place": "Nyon"
+  },
+  {
+    "id": "ch-vevey",
+    "lat": 46.4628,
+    "lng": 6.842,
+    "country": "Schweiz",
+    "place": "Vevey"
+  },
+  {
+    "id": "ch-montreux",
+    "lat": 46.4312,
+    "lng": 6.9106,
+    "country": "Schweiz",
+    "place": "Montreux"
+  },
+  {
+    "id": "ch-aarau",
+    "lat": 47.391,
+    "lng": 8.045,
+    "country": "Schweiz",
+    "place": "Aarau"
+  },
+  {
+    "id": "ch-solothurn",
+    "lat": 47.2088,
+    "lng": 7.5323,
+    "country": "Schweiz",
+    "place": "Solothurn"
+  },
+  {
+    "id": "ch-olten",
+    "lat": 47.35,
+    "lng": 7.904,
+    "country": "Schweiz",
+    "place": "Olten"
+  },
+  {
+    "id": "ch-baden",
+    "lat": 47.4761,
+    "lng": 8.3064,
+    "country": "Schweiz",
+    "place": "Baden"
+  },
+  {
+    "id": "ch-zermatt",
+    "lat": 46.0207,
+    "lng": 7.7491,
+    "country": "Schweiz",
+    "place": "Zermatt"
+  },
+  {
+    "id": "ch-interlaken",
+    "lat": 46.6863,
+    "lng": 7.8632,
+    "country": "Schweiz",
+    "place": "Interlaken"
+  },
+  {
+    "id": "ch-grindelwald",
+    "lat": 46.6244,
+    "lng": 8.0413,
+    "country": "Schweiz",
+    "place": "Grindelwald"
+  },
+  {
+    "id": "ch-gstaad",
+    "lat": 46.4718,
+    "lng": 7.2865,
+    "country": "Schweiz",
+    "place": "Gstaad"
+  },
+  {
+    "id": "ch-davos",
+    "lat": 46.8027,
+    "lng": 9.836,
+    "country": "Schweiz",
+    "place": "Davos"
+  },
+  {
+    "id": "ch-stmoritz",
+    "lat": 46.4908,
+    "lng": 9.8355,
+    "country": "Schweiz",
+    "place": "St. Moritz"
+  },
+  {
+    "id": "ch-appenzell",
+    "lat": 47.3319,
+    "lng": 9.4093,
+    "country": "Schweiz",
+    "place": "Appenzell"
+  },
+  {
+    "id": "ch-steinamrhein",
+    "lat": 47.66,
+    "lng": 8.86,
+    "country": "Schweiz",
+    "place": "Stein am Rhein"
+  },
+  {
+    "id": "ch-gruyeres",
+    "lat": 46.5844,
+    "lng": 7.082,
+    "country": "Schweiz",
+    "place": "Gruyères"
+  },
+  {
+    "id": "ch-murten",
+    "lat": 46.928,
+    "lng": 7.118,
+    "country": "Schweiz",
+    "place": "Murten"
+  },
+  {
+    "id": "ch-ascona",
+    "lat": 46.155,
+    "lng": 8.77,
+    "country": "Schweiz",
+    "place": "Ascona"
+  },
+  {
+    "id": "ch-lauterbrunnen",
+    "lat": 46.5934,
+    "lng": 7.9086,
+    "country": "Schweiz",
+    "place": "Lauterbrunnen"
+  },
+  {
+    "id": "ch-wengen",
+    "lat": 46.6053,
+    "lng": 7.9218,
+    "country": "Schweiz",
+    "place": "Wengen"
+  },
+  {
+    "id": "ch-muerren",
+    "lat": 46.5602,
+    "lng": 7.893,
+    "country": "Schweiz",
+    "place": "Mürren"
+  },
+  {
+    "id": "ch-saasfee",
+    "lat": 46.1092,
+    "lng": 7.9297,
+    "country": "Schweiz",
+    "place": "Saas-Fee"
+  },
+  {
+    "id": "ch-verbier",
+    "lat": 46.0963,
+    "lng": 7.2286,
+    "country": "Schweiz",
+    "place": "Verbier"
+  },
+  {
+    "id": "ch-andermatt",
+    "lat": 46.6339,
+    "lng": 8.5942,
+    "country": "Schweiz",
+    "place": "Andermatt"
+  },
+  {
+    "id": "ch-brienz",
+    "lat": 46.7568,
+    "lng": 8.033,
+    "country": "Schweiz",
+    "place": "Brienz"
+  },
+  {
+    "id": "ch-arosa",
+    "lat": 46.78,
+    "lng": 9.677,
+    "country": "Schweiz",
+    "place": "Arosa"
+  }
 ]

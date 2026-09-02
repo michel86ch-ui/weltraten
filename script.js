@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------
 const ROUNDS_PER_GAME = 5;
 const MAX_POINTS = 5000;
-const SCORE_DECAY_KM = 2000; // je kleiner, desto strenger die Punkteverteilung
+const SCORE_DECAY_KM = 2000;        // Länder-Runden: grosszügiger Massstab
+const SCORE_DECAY_KM_SWISS = 40;    // Schweiz-Runden: kleines Land, engerer Massstab
 
 // ---------------------------------------------------------------
 // Zustand
@@ -11,6 +12,10 @@ const SCORE_DECAY_KM = 2000; // je kleiner, desto strenger die Punkteverteilung
 let mapsReady = false;
 let locations = [];
 let centroids = {};
+let swissPlaceCoords = {};   // { Ortsname: {lat, lng} }, aus locations mit place-Feld gebaut
+let countryOptionsHtml = '';
+let swissOptionsHtml = '';
+let currentRoundIsSwiss = false;
 let panorama = null;
 
 let playerName = localStorage.getItem('weltraten_name') || '';
@@ -18,6 +23,7 @@ let roundPool = [];
 let currentRoundIndex = 0;
 let totalScore = 0;
 let roundResults = [];
+let currentRequestToken = 0; // erkennt/verwirft veraltete Panorama-Antworten aus früheren Runden
 
 // ---------------------------------------------------------------
 // DOM-Referenzen
@@ -32,6 +38,8 @@ const startButton = document.getElementById('start-button');
 
 const guessForm = document.getElementById('guess-form');
 const guessSelect = document.getElementById('guess-select');
+const guessSubmit = document.getElementById('guess-submit');
+const panoLoading = document.getElementById('pano-loading');
 
 const hudPlayer = document.getElementById('hud-player');
 const hudRound = document.getElementById('hud-round');
@@ -64,10 +72,21 @@ async function loadData() {
   locations = await locRes.json();
   centroids = await centRes.json();
 
-  const names = Object.keys(centroids).sort((a, b) => a.localeCompare(b, 'de'));
-  guessSelect.innerHTML =
+  locations.forEach((l) => {
+    if (l.place) swissPlaceCoords[l.place] = { lat: l.lat, lng: l.lng };
+  });
+
+  const countryNames = Object.keys(centroids).sort((a, b) => a.localeCompare(b, 'de'));
+  countryOptionsHtml =
     '<option value="" disabled selected>Land wählen …</option>' +
-    names.map((n) => `<option value="${n}">${n}</option>`).join('');
+    countryNames.map((n) => `<option value="${n}">${n}</option>`).join('');
+
+  const swissNames = Object.keys(swissPlaceCoords).sort((a, b) => a.localeCompare(b, 'de'));
+  swissOptionsHtml =
+    '<option value="" disabled selected>Ort wählen …</option>' +
+    swissNames.map((n) => `<option value="${n}">${n}</option>`).join('');
+
+  guessSelect.innerHTML = countryOptionsHtml;
 }
 
 function shuffle(array) {
@@ -102,7 +121,7 @@ function startGame() {
   totalScore = 0;
   currentRoundIndex = 0;
   roundResults = [];
-  roundPool = shuffle(locations).slice(0, ROUNDS_PER_GAME);
+  roundPool = drawLocations(ROUNDS_PER_GAME);
 
   loginScreen.classList.add('hidden');
   finalScreen.classList.add('hidden');
@@ -112,12 +131,59 @@ function startGame() {
   startRound();
 }
 
+// ---------------------------------------------------------------
+// Anti-Wiederholung: "Kartenstapel", der erst neu gemischt wird,
+// wenn alle Orte einmal gezogen wurden. Der Fortschritt bleibt via
+// localStorage auch über Browser-Neustarts/Sessions hinweg erhalten,
+// damit sich Panoramen möglichst lange nicht wiederholen.
+// ---------------------------------------------------------------
+const DECK_STORAGE_KEY = 'weltraten_deck';
+
+function loadDeck() {
+  try {
+    const raw = localStorage.getItem(DECK_STORAGE_KEY);
+    const deck = raw ? JSON.parse(raw) : [];
+    // Falls sich locations.json seit dem letzten Besuch geändert hat,
+    // veraltete IDs aussortieren.
+    const validIds = new Set(locations.map((l) => l.id));
+    return deck.filter((id) => validIds.has(id));
+  } catch {
+    return [];
+  }
+}
+
+function saveDeck(deck) {
+  localStorage.setItem(DECK_STORAGE_KEY, JSON.stringify(deck));
+}
+
+function drawLocations(count) {
+  let deck = loadDeck();
+  const drawn = [];
+
+  while (drawn.length < count) {
+    if (deck.length === 0) {
+      const excludeIds = new Set(drawn.map((l) => l.id));
+      let pool = locations.filter((l) => !excludeIds.has(l.id));
+      if (pool.length === 0) pool = locations; // Sicherheitsnetz falls count > Gesamtzahl Orte
+      deck = shuffle(pool).map((l) => l.id);
+    }
+    const id = deck.shift();
+    const loc = locations.find((l) => l.id === id);
+    if (loc) drawn.push(loc);
+  }
+
+  saveDeck(deck);
+  return drawn;
+}
+
 let streetViewService = null;
 
 function startRound() {
   const location = roundPool[currentRoundIndex];
+  currentRoundIsSwiss = Boolean(location.place);
   hudRound.textContent = `Runde ${currentRoundIndex + 1} / ${ROUNDS_PER_GAME}`;
   hudScore.textContent = `${totalScore} Punkte`;
+  guessSelect.innerHTML = currentRoundIsSwiss ? swissOptionsHtml : countryOptionsHtml;
   guessSelect.selectedIndex = 0;
 
   if (!panorama) {
@@ -147,23 +213,44 @@ function startRound() {
 // Sucht gezielt ein Aussen-Panorama in der Nähe (schliesst Innenaufnahmen wie
 // Museen, Bibliotheken, Läden aus). Falls im Umkreis nichts gefunden wird,
 // wird der Suchradius schrittweise vergrössert.
-function placeOutdoorPanorama(location, radius = 50) {
+//
+// `token` markiert, zu welcher Runde diese Suche gehört: kommt die Antwort
+// zurück, nachdem längst die nächste Runde gestartet wurde (z. B. weil
+// mehrere Radius-Versuche nötig waren), wird sie verworfen statt das falsche
+// Panorama über die neue Runde zu legen.
+function placeOutdoorPanorama(location, radius = 50, token = ++currentRequestToken) {
+  if (radius === 50) {
+    panoLoading.classList.remove('hidden');
+    guessSubmit.disabled = true;
+    guessSelect.disabled = true;
+  }
+
   const target = { lat: location.lat, lng: location.lng };
   streetViewService.getPanorama(
     { location: target, radius, source: google.maps.StreetViewSource.OUTDOOR },
     (data, status) => {
+      if (token !== currentRequestToken) return; // veraltete Antwort einer vorherigen Runde
+
       if (status === google.maps.StreetViewStatus.OK) {
         panorama.setPano(data.location.pano);
         panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
+        finishPanoramaLoad();
       } else if (radius < 1000) {
-        placeOutdoorPanorama(location, radius * 4);
+        placeOutdoorPanorama(location, radius * 4, token);
       } else {
         // Letzter Ausweg, falls wirklich nichts Passendes existiert
         panorama.setPosition(target);
         panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
+        finishPanoramaLoad();
       }
     }
   );
+}
+
+function finishPanoramaLoad() {
+  panoLoading.classList.add('hidden');
+  guessSubmit.disabled = false;
+  guessSelect.disabled = false;
 }
 
 guessForm.addEventListener('submit', (event) => {
@@ -171,8 +258,9 @@ guessForm.addEventListener('submit', (event) => {
   const guess = guessSelect.value;
   if (!guess) return;
 
-  const actual = roundPool[currentRoundIndex].country;
-  const { points, distanceKm } = scoreGuess(guess, actual);
+  const location = roundPool[currentRoundIndex];
+  const actual = currentRoundIsSwiss ? location.place : location.country;
+  const { points, distanceKm } = scoreGuess(guess, actual, currentRoundIsSwiss);
 
   totalScore += points;
   roundResults.push({ guess, actual, points, distanceKm });
@@ -196,22 +284,25 @@ function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-function scoreGuess(guess, actual) {
-  // Exakt richtiges Land -> volle Punktzahl, unabhängig von der Landesgröße.
+function scoreGuess(guess, actual, isSwiss) {
+  // Exakter Treffer -> volle Punktzahl, unabhängig von Landes-/Kantonsgrösse.
   if (normalize(guess) === normalize(actual)) {
     return { points: MAX_POINTS, distanceKm: 0 };
   }
 
-  const guessCentroid = centroids[Object.keys(centroids).find((n) => normalize(n) === normalize(guess))];
-  const actualCentroid = centroids[actual];
+  const coordLookup = isSwiss ? swissPlaceCoords : centroids;
+  const decayKm = isSwiss ? SCORE_DECAY_KM_SWISS : SCORE_DECAY_KM;
 
-  // Unbekanntes/falsch geschriebenes Land -> keine Punkte, aber kein Absturz.
-  if (!guessCentroid || !actualCentroid) {
+  const guessCoord = coordLookup[Object.keys(coordLookup).find((n) => normalize(n) === normalize(guess))];
+  const actualCoord = coordLookup[actual];
+
+  // Unbekannter/falsch geschriebener Eintrag -> keine Punkte, aber kein Absturz.
+  if (!guessCoord || !actualCoord) {
     return { points: 0, distanceKm: null };
   }
 
-  const distanceKm = haversineKm(guessCentroid, actualCentroid);
-  const points = Math.round(MAX_POINTS * Math.exp(-distanceKm / SCORE_DECAY_KM));
+  const distanceKm = haversineKm(guessCoord, actualCoord);
+  const points = Math.round(MAX_POINTS * Math.exp(-distanceKm / decayKm));
   return { points, distanceKm };
 }
 
@@ -220,12 +311,13 @@ function showRoundResult(guess, actual, points, distanceKm) {
   resultScreen.classList.remove('hidden');
 
   const correct = normalize(guess) === normalize(actual);
+  const noun = currentRoundIsSwiss ? 'Ort' : 'Land';
   resultHeadline.textContent = correct ? 'Richtig!' : `Es war ${actual}`;
   resultDetail.textContent =
     distanceKm === null
-      ? `„${guess}“ kennt die Länderliste nicht – prüfe die Schreibweise.`
+      ? `„${guess}“ kennt die Liste nicht – prüfe die Schreibweise.`
       : correct
-      ? 'Du hast das Land exakt getroffen.'
+      ? `Du hast den ${noun} exakt getroffen.`
       : `Deine Antwort „${guess}“ liegt rund ${Math.round(distanceKm)} km entfernt.`;
   resultPoints.textContent = `+${points} Punkte`;
   hudScore.textContent = `${totalScore} Punkte`;
