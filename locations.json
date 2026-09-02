@@ -157,8 +157,8 @@
   },
   {
     "id": "at-vienna",
-    "lat": 48.2082,
-    "lng": 16.3738,
+    "lat": 48.1855,
+    "lng": 16.3122,
     "country": "Österreich"
   },
   {
@@ -492,8 +492,8 @@
   },
   {
     "id": "ch-duebendorf",
-    "lat": 47.3979,
-    "lng": 8.6183,
+    "lat": 47.3968,
+    "lng": 8.6187,
     "country": "Schweiz",
     "place": "Dübendorf"
   },
@@ -748,5 +748,17 @@
     "lng": 9.677,
     "country": "Schweiz",
     "place": "Arosa"
+  },
+  {
+    "id": "at-salzburg",
+    "lat": 47.7981,
+    "lng": 13.045,
+    "country": "Österreich"
+  },
+  {
+    "id": "at-innsbruck",
+    "lat": 47.2692,
+    "lng": 11.3933,
+    "country": "Österreich"
   }
 ]
