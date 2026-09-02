@@ -1,10 +1,13 @@
 // ---------------------------------------------------------------
 // Konfiguration
 // ---------------------------------------------------------------
-const ROUNDS_PER_GAME = 5;
+const SP_ROUNDS = 5;   // Singleplayer
+const MP_ROUNDS = 10;  // Multiplayer
 const MAX_POINTS = 5000;
 const SCORE_DECAY_KM = 2000;        // Länder-Runden: grosszügiger Massstab
 const SCORE_DECAY_KM_SWISS = 40;    // Schweiz-Runden: kleines Land, engerer Massstab
+
+const KNOWN_GAMES_KEY = 'weltraten_mp_known_games';
 
 // ---------------------------------------------------------------
 // Zustand
@@ -17,24 +20,65 @@ let countryOptionsHtml = '';
 let swissOptionsHtml = '';
 let currentRoundIsSwiss = false;
 let panorama = null;
+let streetViewService = null;
 
 let playerName = localStorage.getItem('weltraten_name') || '';
+let roundsTotal = SP_ROUNDS;
 let roundPool = [];
 let currentRoundIndex = 0;
 let totalScore = 0;
 let roundResults = [];
 let currentRequestToken = 0; // erkennt/verwirft veraltete Panorama-Antworten aus früheren Runden
 
+let isMultiplayer = false;
+let currentGameCode = null;      // Code des gerade laufenden/zuletzt gespielten MP-Spiels
+let currentLeaderboardCode = null; // Code, dessen Rangliste gerade angezeigt wird (kann ein anderes Spiel sein)
+let pendingLoginContext = { type: 'sp' }; // steuert, was der Namen-Screen nach "weiter" tut
+
 // ---------------------------------------------------------------
 // DOM-Referenzen
 // ---------------------------------------------------------------
+const landingScreen = document.getElementById('landing-screen');
 const loginScreen = document.getElementById('login-screen');
 const gameScreen = document.getElementById('game-screen');
 const resultScreen = document.getElementById('result-screen');
 const finalScreen = document.getElementById('final-screen');
+const inviteScreen = document.getElementById('invite-screen');
+const mpLockedScreen = document.getElementById('mp-locked-screen');
+const leaderboardScreen = document.getElementById('leaderboard-screen');
 
+const allScreens = [
+  landingScreen, loginScreen, gameScreen, resultScreen, finalScreen,
+  inviteScreen, mpLockedScreen, leaderboardScreen,
+];
+
+function showScreen(screen) {
+  allScreens.forEach((s) => s.classList.add('hidden'));
+  screen.classList.remove('hidden');
+}
+
+const landingSingleplayerButton = document.getElementById('landing-singleplayer-button');
+const landingMultiplayerButton = document.getElementById('landing-multiplayer-button');
+const landingMpList = document.getElementById('landing-mp-list');
+
+const loginSubtitle = document.getElementById('login-subtitle');
 const usernameInput = document.getElementById('username-input');
 const startButton = document.getElementById('start-button');
+
+const inviteCodeLabel = document.getElementById('invite-code');
+const inviteLinkInput = document.getElementById('invite-link-input');
+const inviteShareButton = document.getElementById('invite-share-button');
+const invitePlayButton = document.getElementById('invite-play-button');
+const inviteBackButton = document.getElementById('invite-back-button');
+
+const mpLockedDetail = document.getElementById('mp-locked-detail');
+const mpLockedLeaderboardButton = document.getElementById('mp-locked-leaderboard-button');
+const mpLockedBackButton = document.getElementById('mp-locked-back-button');
+
+const leaderboardCodeLabel = document.getElementById('leaderboard-code');
+const leaderboardList = document.getElementById('leaderboard-list');
+const leaderboardShareButton = document.getElementById('leaderboard-share-button');
+const leaderboardBackButton = document.getElementById('leaderboard-back-button');
 
 const guessForm = document.getElementById('guess-form');
 const guessSelect = document.getElementById('guess-select');
@@ -52,6 +96,9 @@ const nextRoundButton = document.getElementById('next-round-button');
 
 const finalSummary = document.getElementById('final-summary');
 const playAgainButton = document.getElementById('play-again-button');
+const finalShareButton = document.getElementById('final-share-button');
+const finalLeaderboardButton = document.getElementById('final-leaderboard-button');
+const finalLandingButton = document.getElementById('final-landing-button');
 
 // ---------------------------------------------------------------
 // Google Maps Callback (wird per ?callback=initApp aus index.html aufgerufen)
@@ -98,11 +145,244 @@ function shuffle(array) {
   return copy;
 }
 
-// ---------------------------------------------------------------
-// Login
-// ---------------------------------------------------------------
-if (playerName) usernameInput.value = playerName;
+function normalize(name) {
+  return name.trim().toLowerCase();
+}
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---------------------------------------------------------------
+// Deterministisches Mischen: gleicher Code -> exakt dieselbe
+// Reihenfolge/Auswahl auf jedem Gerät. Basis fuer den Multiplayer-
+// Modus, der ohne gemeinsame Datenbank auskommt.
+// ---------------------------------------------------------------
+function hashString(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
+}
+
+function seededRandom(seed) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function deterministicShuffle(array, seedStr) {
+  const rnd = seededRandom(hashString(seedStr));
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function deterministicLocations(code, count) {
+  return deterministicShuffle(locations, code).slice(0, count);
+}
+
+function generateGameCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne 0/O und 1/I
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// ---------------------------------------------------------------
+// Multiplayer-Speicher (nur lokal, kein Server): Fortschritt/
+// Ergebnisse pro Spielcode, Liste bekannter Spiele, Rangliste.
+// ---------------------------------------------------------------
+function mpCompletedKey(code) { return `weltraten_mp_completed:${code}`; }
+function mpLeaderboardKey(code) { return `weltraten_mp_lb:${code}`; }
+
+function getCompletedInfo(code) {
+  try {
+    const raw = localStorage.getItem(mpCompletedKey(code));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberKnownGame(code) {
+  try {
+    const raw = localStorage.getItem(KNOWN_GAMES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    const filtered = list.filter((c) => c !== code);
+    filtered.unshift(code);
+    localStorage.setItem(KNOWN_GAMES_KEY, JSON.stringify(filtered.slice(0, 30)));
+  } catch {
+    // localStorage evtl. nicht verfuegbar -> einfach ignorieren
+  }
+}
+
+function getKnownGames() {
+  try {
+    const raw = localStorage.getItem(KNOWN_GAMES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getLeaderboard(code) {
+  try {
+    const raw = localStorage.getItem(mpLeaderboardKey(code));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergeLeaderboardEntries(code, entries) {
+  const current = getLeaderboard(code);
+  const byName = new Map(current.map((e) => [normalize(e.name), e]));
+  entries.forEach((e) => {
+    if (!e || typeof e.name !== 'string' || typeof e.score !== 'number') return;
+    const key = normalize(e.name);
+    const existing = byName.get(key);
+    if (!existing || e.score > existing.score) {
+      byName.set(key, { name: e.name, score: e.score });
+    }
+  });
+  const merged = [...byName.values()].sort((a, b) => b.score - a.score);
+  localStorage.setItem(mpLeaderboardKey(code), JSON.stringify(merged));
+  return merged;
+}
+
+function encodeLeaderboardParam(code) {
+  const json = JSON.stringify(getLeaderboard(code));
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+function mergeLeaderboardFromParam(code, encoded) {
+  try {
+    const json = decodeURIComponent(escape(atob(encoded)));
+    const entries = JSON.parse(json);
+    if (Array.isArray(entries)) mergeLeaderboardEntries(code, entries);
+  } catch {
+    // kaputter/manipulierter Link-Parameter -> einfach ignorieren
+  }
+}
+
+function buildInviteLink(code) {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.searchParams.set('game', code);
+  return url.toString();
+}
+
+function buildResultShareLink(code) {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.searchParams.set('game', code);
+  url.searchParams.set('lb', encodeLeaderboardParam(code));
+  return url.toString();
+}
+
+function clearUrlParams() {
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
+async function shareLink(link, title, buttonEl) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url: link });
+      return;
+    } catch {
+      // Abgebrochen/nicht unterstuetzt -> Clipboard-Fallback unten versuchen
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(link);
+    flashButtonFeedback(buttonEl, 'Link kopiert!');
+  } catch {
+    window.prompt('Link kopieren:', link);
+  }
+}
+
+function flashButtonFeedback(buttonEl, message) {
+  if (!buttonEl) return;
+  const original = buttonEl.textContent;
+  buttonEl.textContent = message;
+  buttonEl.disabled = true;
+  setTimeout(() => {
+    buttonEl.textContent = original;
+    buttonEl.disabled = false;
+  }, 1800);
+}
+
+// ---------------------------------------------------------------
+// Startseite
+// ---------------------------------------------------------------
+function showLandingScreen() {
+  const known = getKnownGames();
+  if (known.length === 0) {
+    landingMpList.innerHTML = '';
+  } else {
+    landingMpList.innerHTML =
+      '<p class="mp-list-heading">Deine Multiplayer-Spiele</p>' +
+      known
+        .map((code) => {
+          const info = getCompletedInfo(code);
+          const statusText = info ? `gespielt: ${info.score} Punkte` : 'noch offen';
+          const action = info ? 'Rangliste' : 'Weiter';
+          const dataAction = info ? 'lb' : 'play';
+          return `<div class="mp-list-entry"><div><strong>${escapeHtml(code)}</strong><br><span class="mp-list-status">${statusText}</span></div><button data-code="${escapeHtml(code)}" data-action="${dataAction}">${action}</button></div>`;
+        })
+        .join('');
+  }
+  showScreen(landingScreen);
+}
+
+landingMpList.addEventListener('click', (event) => {
+  const btn = event.target.closest('button[data-code]');
+  if (!btn) return;
+  const code = btn.dataset.code;
+  if (btn.dataset.action === 'lb') {
+    showLeaderboardScreen(code);
+  } else {
+    pendingLoginContext = { type: 'mp-join', code };
+    loginSubtitle.textContent = `Multiplayer-Spiel ${code} beitreten – wie heisst du?`;
+    usernameInput.value = playerName;
+    showScreen(loginScreen);
+  }
+});
+
+landingSingleplayerButton.addEventListener('click', () => {
+  pendingLoginContext = { type: 'sp' };
+  loginSubtitle.textContent = 'Du landest irgendwo auf der Welt. Schau dich um und errate das Land.';
+  usernameInput.value = playerName;
+  showScreen(loginScreen);
+});
+
+landingMultiplayerButton.addEventListener('click', () => {
+  const code = generateGameCode();
+  pendingLoginContext = { type: 'mp-create', code };
+  loginSubtitle.textContent = `Multiplayer-Spiel ${code} erstellen – wie heisst du?`;
+  usernameInput.value = playerName;
+  showScreen(loginScreen);
+});
+
+function goToLanding() {
+  clearUrlParams();
+  showLandingScreen();
+}
+
+// ---------------------------------------------------------------
+// Namen-Screen (SP-Start, MP-Erstellung, MP-Beitritt)
+// ---------------------------------------------------------------
 startButton.addEventListener('click', () => {
   const name = usernameInput.value.trim();
   if (!name) {
@@ -111,31 +391,78 @@ startButton.addEventListener('click', () => {
   }
   playerName = name;
   localStorage.setItem('weltraten_name', playerName);
-  startGame();
+
+  if (pendingLoginContext.type === 'mp-create') {
+    rememberKnownGame(pendingLoginContext.code);
+    showInviteScreen(pendingLoginContext.code);
+  } else if (pendingLoginContext.type === 'mp-join') {
+    rememberKnownGame(pendingLoginContext.code);
+    startMultiplayerRounds(pendingLoginContext.code);
+  } else {
+    startGame();
+  }
 });
 
 // ---------------------------------------------------------------
-// Spielablauf
+// Einladungs-Screen
+// ---------------------------------------------------------------
+function showInviteScreen(code) {
+  currentGameCode = code;
+  const link = buildInviteLink(code);
+  inviteCodeLabel.textContent = code;
+  inviteLinkInput.value = link;
+  showScreen(inviteScreen);
+}
+
+inviteShareButton.addEventListener('click', () => {
+  shareLink(inviteLinkInput.value, `Weltraten – Multiplayer-Spiel ${currentGameCode}`, inviteShareButton);
+});
+
+invitePlayButton.addEventListener('click', () => {
+  startMultiplayerRounds(currentGameCode);
+});
+
+inviteBackButton.addEventListener('click', goToLanding);
+
+// ---------------------------------------------------------------
+// Spielablauf: Singleplayer
 // ---------------------------------------------------------------
 function startGame() {
+  isMultiplayer = false;
+  currentGameCode = null;
+  roundsTotal = SP_ROUNDS;
   totalScore = 0;
   currentRoundIndex = 0;
   roundResults = [];
-  roundPool = drawLocations(ROUNDS_PER_GAME);
+  roundPool = drawLocations(roundsTotal);
 
-  loginScreen.classList.add('hidden');
-  finalScreen.classList.add('hidden');
-  gameScreen.classList.remove('hidden');
   hudPlayer.textContent = playerName;
-
+  showScreen(gameScreen);
   startRound();
 }
 
 // ---------------------------------------------------------------
-// Anti-Wiederholung: "Kartenstapel", der erst neu gemischt wird,
-// wenn alle Orte einmal gezogen wurden. Der Fortschritt bleibt via
-// localStorage auch über Browser-Neustarts/Sessions hinweg erhalten,
-// damit sich Panoramen möglichst lange nicht wiederholen.
+// Spielablauf: Multiplayer
+// ---------------------------------------------------------------
+function startMultiplayerRounds(code) {
+  isMultiplayer = true;
+  currentGameCode = code;
+  roundsTotal = MP_ROUNDS;
+  totalScore = 0;
+  currentRoundIndex = 0;
+  roundResults = [];
+  roundPool = deterministicLocations(code, roundsTotal);
+
+  hudPlayer.textContent = playerName;
+  showScreen(gameScreen);
+  startRound();
+}
+
+// ---------------------------------------------------------------
+// Anti-Wiederholung (nur Singleplayer): "Kartenstapel", der erst
+// neu gemischt wird, wenn alle Orte einmal gezogen wurden. Der
+// Fortschritt bleibt via localStorage auch über Sessions hinweg
+// erhalten, damit sich Panoramen möglichst lange nicht wiederholen.
 // ---------------------------------------------------------------
 const DECK_STORAGE_KEY = 'weltraten_deck';
 
@@ -143,8 +470,6 @@ function loadDeck() {
   try {
     const raw = localStorage.getItem(DECK_STORAGE_KEY);
     const deck = raw ? JSON.parse(raw) : [];
-    // Falls sich locations.json seit dem letzten Besuch geändert hat,
-    // veraltete IDs aussortieren.
     const validIds = new Set(locations.map((l) => l.id));
     return deck.filter((id) => validIds.has(id));
   } catch {
@@ -164,7 +489,7 @@ function drawLocations(count) {
     if (deck.length === 0) {
       const excludeIds = new Set(drawn.map((l) => l.id));
       let pool = locations.filter((l) => !excludeIds.has(l.id));
-      if (pool.length === 0) pool = locations; // Sicherheitsnetz falls count > Gesamtzahl Orte
+      if (pool.length === 0) pool = locations;
       deck = shuffle(pool).map((l) => l.id);
     }
     const id = deck.shift();
@@ -176,12 +501,15 @@ function drawLocations(count) {
   return drawn;
 }
 
-let streetViewService = null;
-
+// ---------------------------------------------------------------
+// Runde anzeigen
+// ---------------------------------------------------------------
 function startRound() {
   const location = roundPool[currentRoundIndex];
   currentRoundIsSwiss = Boolean(location.place);
-  hudRound.textContent = `Runde ${currentRoundIndex + 1} / ${ROUNDS_PER_GAME}`;
+  hudRound.textContent = isMultiplayer
+    ? `Runde ${currentRoundIndex + 1} / ${roundsTotal} · ${currentGameCode}`
+    : `Runde ${currentRoundIndex + 1} / ${roundsTotal}`;
   hudScore.textContent = `${totalScore} Punkte`;
   guessSelect.innerHTML = currentRoundIsSwiss ? swissOptionsHtml : countryOptionsHtml;
   guessSelect.selectedIndex = 0;
@@ -205,9 +533,7 @@ function startRound() {
   }
 
   placeOutdoorPanorama(location);
-
-  resultScreen.classList.add('hidden');
-  gameScreen.classList.remove('hidden');
+  showScreen(gameScreen);
 }
 
 // Sucht gezielt ein Aussen-Panorama in der Nähe (schliesst Innenaufnahmen wie
@@ -215,9 +541,8 @@ function startRound() {
 // wird der Suchradius schrittweise vergrössert.
 //
 // `token` markiert, zu welcher Runde diese Suche gehört: kommt die Antwort
-// zurück, nachdem längst die nächste Runde gestartet wurde (z. B. weil
-// mehrere Radius-Versuche nötig waren), wird sie verworfen statt das falsche
-// Panorama über die neue Runde zu legen.
+// zurück, nachdem längst die nächste Runde gestartet wurde, wird sie
+// verworfen statt das falsche Panorama über die neue Runde zu legen.
 function placeOutdoorPanorama(location, radius = 50, token = ++currentRequestToken, swapAttempts = 0) {
   if (radius === 50) {
     panoLoading.classList.remove('hidden');
@@ -244,11 +569,16 @@ function placeOutdoorPanorama(location, radius = 50, token = ++currentRequestTok
       }
 
       if (swapAttempts < 3) {
-        // Selbst im 5-km-Umkreis kein Aussen-Panorama (z. B. sehr ländliche
-        // Gegend) -> anderen Ort aus dem Stapel ziehen, statt riskieren,
-        // dass ein Innenraum-Bild angezeigt wird. Der neue Ort ersetzt diese
-        // Runde vollständig (auch als korrekte Antwort).
-        const replacement = drawLocations(1)[0];
+        // Selbst im 5-km-Umkreis kein Aussen-Panorama -> anderen Ort
+        // nachziehen statt ein moegliches Innenraum-Bild zu riskieren.
+        // Im Multiplayer MUSS der Ersatz deterministisch (vom Spielcode
+        // abgeleitet) sein, sonst sehen Mitspieler ein anderes Bild.
+        const replacement = isMultiplayer
+          ? deterministicShuffle(locations, `${currentGameCode}-swap-${currentRoundIndex}-${swapAttempts}`).find(
+              (l) => l.id !== location.id
+            )
+          : drawLocations(1)[0];
+
         roundPool[currentRoundIndex] = replacement;
         currentRoundIsSwiss = Boolean(replacement.place);
         guessSelect.innerHTML = currentRoundIsSwiss ? swissOptionsHtml : countryOptionsHtml;
@@ -271,6 +601,9 @@ function finishPanoramaLoad() {
   guessSelect.disabled = false;
 }
 
+// ---------------------------------------------------------------
+// Raten & Scoring
+// ---------------------------------------------------------------
 guessForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const guess = guessSelect.value;
@@ -286,10 +619,6 @@ guessForm.addEventListener('submit', (event) => {
   showRoundResult(guess, actual, points, distanceKm);
 });
 
-function normalize(name) {
-  return name.trim().toLowerCase();
-}
-
 function haversineKm(a, b) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -303,7 +632,6 @@ function haversineKm(a, b) {
 }
 
 function scoreGuess(guess, actual, isSwiss) {
-  // Exakter Treffer -> volle Punktzahl, unabhängig von Landes-/Kantonsgrösse.
   if (normalize(guess) === normalize(actual)) {
     return { points: MAX_POINTS, distanceKm: 0 };
   }
@@ -314,7 +642,6 @@ function scoreGuess(guess, actual, isSwiss) {
   const guessCoord = coordLookup[Object.keys(coordLookup).find((n) => normalize(n) === normalize(guess))];
   const actualCoord = coordLookup[actual];
 
-  // Unbekannter/falsch geschriebener Eintrag -> keine Punkte, aber kein Absturz.
   if (!guessCoord || !actualCoord) {
     return { points: 0, distanceKm: null };
   }
@@ -325,9 +652,6 @@ function scoreGuess(guess, actual, isSwiss) {
 }
 
 function showRoundResult(guess, actual, points, distanceKm) {
-  gameScreen.classList.add('hidden');
-  resultScreen.classList.remove('hidden');
-
   const correct = normalize(guess) === normalize(actual);
   const noun = currentRoundIsSwiss ? 'Ort' : 'Land';
   resultHeadline.textContent = correct ? 'Richtig!' : `Es war ${actual}`;
@@ -339,33 +663,137 @@ function showRoundResult(guess, actual, points, distanceKm) {
       : `Deine Antwort „${guess}“ liegt rund ${Math.round(distanceKm)} km entfernt.`;
   resultPoints.textContent = `+${points} Punkte`;
   hudScore.textContent = `${totalScore} Punkte`;
+  showScreen(resultScreen);
 }
 
 nextRoundButton.addEventListener('click', () => {
   currentRoundIndex += 1;
-  if (currentRoundIndex >= ROUNDS_PER_GAME) {
+  if (currentRoundIndex >= roundsTotal) {
     showFinalScreen();
   } else {
     startRound();
   }
 });
 
+// ---------------------------------------------------------------
+// Endstand
+// ---------------------------------------------------------------
 function showFinalScreen() {
-  resultScreen.classList.add('hidden');
-  finalScreen.classList.remove('hidden');
-
   const lines = roundResults
     .map((r, i) => `Runde ${i + 1}: ${r.actual} – ${r.points} Punkte`)
     .join('<br>');
-  finalSummary.innerHTML = `${playerName}, dein Ergebnis: <strong>${totalScore} Punkte</strong><br><br>${lines}`;
+
+  finalSummary.innerHTML = isMultiplayer
+    ? `${playerName}, dein Ergebnis in Spiel ${currentGameCode}: <strong>${totalScore} Punkte</strong><br><br>${lines}`
+    : `${playerName}, dein Ergebnis: <strong>${totalScore} Punkte</strong><br><br>${lines}`;
+
+  if (isMultiplayer) {
+    completeMultiplayerGame(currentGameCode, totalScore);
+    playAgainButton.classList.add('hidden');
+    finalShareButton.classList.remove('hidden');
+    finalLeaderboardButton.classList.remove('hidden');
+  } else {
+    playAgainButton.classList.remove('hidden');
+    finalShareButton.classList.add('hidden');
+    finalLeaderboardButton.classList.add('hidden');
+  }
+  finalLandingButton.classList.remove('hidden');
+
+  showScreen(finalScreen);
+}
+
+function completeMultiplayerGame(code, score) {
+  mergeLeaderboardEntries(code, [{ name: playerName, score }]);
+  localStorage.setItem(mpCompletedKey(code), JSON.stringify({ score, ts: Date.now() }));
+  rememberKnownGame(code);
 }
 
 playAgainButton.addEventListener('click', () => {
-  finalScreen.classList.add('hidden');
   startGame();
 });
 
+finalShareButton.addEventListener('click', () => {
+  shareLink(
+    buildResultShareLink(currentGameCode),
+    `Mein Weltraten-Ergebnis: ${totalScore} Punkte (Spiel ${currentGameCode})`,
+    finalShareButton
+  );
+});
+
+finalLeaderboardButton.addEventListener('click', () => {
+  showLeaderboardScreen(currentGameCode);
+});
+
+finalLandingButton.addEventListener('click', goToLanding);
+
 // ---------------------------------------------------------------
-// Start
+// "Schon gespielt"-Screen (Aufruf eines MP-Links fuer ein
+// abgeschlossenes Spiel dieses Geraets)
 // ---------------------------------------------------------------
-loadData();
+function showMpLockedScreen(code, info) {
+  currentGameCode = code;
+  mpLockedDetail.textContent = `Du hast Spiel ${code} auf diesem Gerät bereits gespielt: ${info.score} Punkte. Nochmal spielen geht nicht (sonst wäre die Rangliste unfair).`;
+  showScreen(mpLockedScreen);
+}
+
+mpLockedLeaderboardButton.addEventListener('click', () => {
+  showLeaderboardScreen(currentGameCode);
+});
+mpLockedBackButton.addEventListener('click', goToLanding);
+
+// ---------------------------------------------------------------
+// Rangliste
+// ---------------------------------------------------------------
+function showLeaderboardScreen(code) {
+  currentLeaderboardCode = code;
+  leaderboardCodeLabel.textContent = code;
+  const entries = getLeaderboard(code);
+  leaderboardList.innerHTML = entries.length
+    ? entries
+        .map((e) => `<li><span>${escapeHtml(e.name)}</span><span class="lb-score">${e.score} Punkte</span></li>`)
+        .join('')
+    : '<li>Noch keine Ergebnisse bekannt.</li>';
+  showScreen(leaderboardScreen);
+}
+
+leaderboardShareButton.addEventListener('click', () => {
+  shareLink(
+    buildResultShareLink(currentLeaderboardCode),
+    `Weltraten-Rangliste – Spiel ${currentLeaderboardCode}`,
+    leaderboardShareButton
+  );
+});
+
+leaderboardBackButton.addEventListener('click', goToLanding);
+
+// ---------------------------------------------------------------
+// Start: Daten laden, dann anhand der URL entscheiden, was zu
+// zeigen ist (normale Startseite oder MP-Einstieg via Link).
+// ---------------------------------------------------------------
+async function boot() {
+  await loadData();
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('game');
+
+  if (code && params.has('lb')) {
+    mergeLeaderboardFromParam(code, params.get('lb'));
+  }
+
+  if (code) {
+    const info = getCompletedInfo(code);
+    if (info) {
+      showMpLockedScreen(code, info);
+    } else {
+      rememberKnownGame(code);
+      pendingLoginContext = { type: 'mp-join', code };
+      loginSubtitle.textContent = `Multiplayer-Spiel ${code} beitreten – wie heisst du?`;
+      usernameInput.value = playerName;
+      showScreen(loginScreen);
+    }
+  } else {
+    showLandingScreen();
+  }
+}
+
+boot();

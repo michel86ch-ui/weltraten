@@ -78,6 +78,22 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
   nicht alle anderen einmal gezeigt wurden. Der Fortschritt wird in
   `localStorage` gespeichert und bleibt so auch über mehrere Spiele/Browser-
   Sessions hinweg erhalten.
+- **Multiplayer (10 Runden), ohne eigenen Server:** Ein neues MP-Spiel
+  bekommt einen zufälligen 6-stelligen Code. Aus diesem Code wird
+  deterministisch (`deterministicShuffle()`) dieselbe Liste von 10 Orten
+  berechnet – jedes Gerät, das den Einladungslink `?game=<code>` öffnet,
+  zieht exakt dieselben Orte, ganz ohne gemeinsame Datenbank. Nach den 10
+  Runden wird das Ergebnis lokal gespeichert und das Spiel für dieses Gerät
+  gesperrt (kein Neuspielen für einen besseren Score).
+  **Rangliste ohne Backend:** Da nichts zentral gespeichert wird, kennt jedes
+  Gerät nur die Ergebnisse, die es selbst gespielt oder über einen geteilten
+  Link gesehen hat. Der "Ergebnis-Link teilen"-Button hängt deshalb die
+  komplette, auf diesem Gerät bekannte Rangliste kodiert an den Link an
+  (`buildResultShareLink()`); wer den Link öffnet, übernimmt diese Einträge
+  automatisch in seine eigene lokale Rangliste (`mergeLeaderboardFromParam()`).
+  Kursiert der Link ein paar Mal in der Gruppe, gleichen sich die Ranglisten
+  so an – aber ohne Garantie auf Vollständigkeit, wenn nicht alle ihr
+  Ergebnis zurückteilen.
 
 ## Bekannte Einschränkungen / nächste Schritte
 
