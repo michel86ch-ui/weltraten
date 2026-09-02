@@ -33,8 +33,9 @@
     </div>
 
     <form id="guess-form" class="guess-panel">
-      <input id="guess-input" type="text" list="country-list" placeholder="Land eingeben …" autocomplete="off" required />
-      <datalist id="country-list"></datalist>
+      <select id="guess-select" required>
+        <option value="" disabled selected>Land wählen …</option>
+      </select>
       <button type="submit" class="btn-primary">Raten</button>
     </form>
   </section>

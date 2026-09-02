@@ -31,8 +31,7 @@ const usernameInput = document.getElementById('username-input');
 const startButton = document.getElementById('start-button');
 
 const guessForm = document.getElementById('guess-form');
-const guessInput = document.getElementById('guess-input');
-const countryList = document.getElementById('country-list');
+const guessSelect = document.getElementById('guess-select');
 
 const hudPlayer = document.getElementById('hud-player');
 const hudRound = document.getElementById('hud-round');
@@ -66,7 +65,9 @@ async function loadData() {
   centroids = await centRes.json();
 
   const names = Object.keys(centroids).sort((a, b) => a.localeCompare(b, 'de'));
-  countryList.innerHTML = names.map((n) => `<option value="${n}"></option>`).join('');
+  guessSelect.innerHTML =
+    '<option value="" disabled selected>Land wählen …</option>' +
+    names.map((n) => `<option value="${n}">${n}</option>`).join('');
 }
 
 function shuffle(array) {
@@ -111,39 +112,63 @@ function startGame() {
   startRound();
 }
 
+let streetViewService = null;
+
 function startRound() {
   const location = roundPool[currentRoundIndex];
   hudRound.textContent = `Runde ${currentRoundIndex + 1} / ${ROUNDS_PER_GAME}`;
   hudScore.textContent = `${totalScore} Punkte`;
-  guessInput.value = '';
-
-  const position = { lat: location.lat, lng: location.lng };
+  guessSelect.selectedIndex = 0;
 
   if (!panorama) {
     panorama = new google.maps.StreetViewPanorama(document.getElementById('streetview'), {
-      position,
       pov: { heading: Math.random() * 360, pitch: 0 },
       zoom: 1,
       addressControl: false,      // keine Adresse einblenden, sonst zu einfach
-      linksControl: false,        // kein Wechsel auf benachbarte Panoramen
+      linksControl: false,        // keine Pfeile zum Nachbar-Panorama
+      clickToGo: false,           // auch per Klick/Doppeltipp kein Weiterlaufen
       panControl: true,
       zoomControl: true,
       fullscreenControl: false,
       motionTracking: false,
       motionTrackingControl: false,
     });
-  } else {
-    panorama.setPosition(position);
-    panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
   }
+  if (!streetViewService) {
+    streetViewService = new google.maps.StreetViewService();
+  }
+
+  placeOutdoorPanorama(location);
 
   resultScreen.classList.add('hidden');
   gameScreen.classList.remove('hidden');
 }
 
+// Sucht gezielt ein Aussen-Panorama in der Nähe (schliesst Innenaufnahmen wie
+// Museen, Bibliotheken, Läden aus). Falls im Umkreis nichts gefunden wird,
+// wird der Suchradius schrittweise vergrössert.
+function placeOutdoorPanorama(location, radius = 50) {
+  const target = { lat: location.lat, lng: location.lng };
+  streetViewService.getPanorama(
+    { location: target, radius, source: google.maps.StreetViewSource.OUTDOOR },
+    (data, status) => {
+      if (status === google.maps.StreetViewStatus.OK) {
+        panorama.setPano(data.location.pano);
+        panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
+      } else if (radius < 1000) {
+        placeOutdoorPanorama(location, radius * 4);
+      } else {
+        // Letzter Ausweg, falls wirklich nichts Passendes existiert
+        panorama.setPosition(target);
+        panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
+      }
+    }
+  );
+}
+
 guessForm.addEventListener('submit', (event) => {
   event.preventDefault();
-  const guess = guessInput.value.trim();
+  const guess = guessSelect.value;
   if (!guess) return;
 
   const actual = roundPool[currentRoundIndex].country;
