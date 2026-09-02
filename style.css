@@ -1,0 +1,171 @@
+:root {
+  --ink: #12161c;
+  --panel: #1b212b;
+  --panel-border: #2a3240;
+  --text: #edeff2;
+  --text-muted: #8a93a3;
+  --amber: #e0a458;
+  --teal: #4fa88f;
+  --font-display: 'Fraunces', serif;
+  --font-ui: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hidden { display: none !important; }
+
+/* --- Login --- */
+.login-card {
+  max-width: 420px;
+  padding: 2.5rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: var(--panel);
+  text-align: left;
+}
+
+.login-card h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 2.4rem;
+  margin: 0 0 0.5rem;
+  color: var(--amber);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+.login-card label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+#username-input {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border-radius: 3px;
+  border: 1px solid var(--panel-border);
+  background: var(--ink);
+  color: var(--text);
+  font-size: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 3px;
+  background: var(--amber);
+  color: #1a1305;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-primary:hover { background: #eab674; }
+.btn-primary:active { transform: scale(0.98); }
+
+.hint {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* --- Spiel --- */
+#streetview {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1.4rem;
+  background: linear-gradient(to bottom, rgba(18,22,28,0.85), transparent);
+  font-size: 0.9rem;
+  color: var(--text);
+  z-index: 5;
+  pointer-events: none;
+}
+
+#hud-score { color: var(--amber); font-weight: 600; }
+
+.guess-panel {
+  position: absolute;
+  bottom: 1.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  padding: 0.7rem;
+  border-radius: 4px;
+  z-index: 5;
+  width: min(90vw, 420px);
+}
+
+.guess-panel input {
+  flex: 1;
+  padding: 0.6rem 0.7rem;
+  border-radius: 3px;
+  border: 1px solid var(--panel-border);
+  background: var(--ink);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.guess-panel .btn-primary { width: auto; padding: 0.6rem 1.1rem; }
+
+/* --- Ergebnis / Endstand --- */
+.result-card {
+  max-width: 460px;
+  padding: 2.2rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: var(--panel);
+  text-align: left;
+}
+
+.result-card h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin-top: 0;
+  color: var(--teal);
+}
+
+#result-points {
+  font-size: 1.3rem;
+  color: var(--amber);
+  font-weight: 600;
+}

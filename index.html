@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weltraten – Länder erraten per Street View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- LOGIN: nur ein Anzeigename, lokal gespeichert, kein Konto -->
+  <section id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>Weltraten</h1>
+      <p class="subtitle">Du landest irgendwo auf der Welt. Schau dich um und errate das Land.</p>
+      <label for="username-input">Dein Name</label>
+      <input id="username-input" type="text" maxlength="20" placeholder="z. B. Michel" autocomplete="off" />
+      <button id="start-button" class="btn-primary">Runde starten</button>
+      <p class="hint">Der Name wird nur lokal in diesem Browser gespeichert – kein Account, kein Passwort.</p>
+    </div>
+  </section>
+
+  <!-- SPIEL -->
+  <section id="game-screen" class="screen hidden">
+    <div id="streetview"></div>
+
+    <div id="hud">
+      <span id="hud-player"></span>
+      <span id="hud-round">Runde 1 / 5</span>
+      <span id="hud-score">0 Punkte</span>
+    </div>
+
+    <form id="guess-form" class="guess-panel">
+      <input id="guess-input" type="text" list="country-list" placeholder="Land eingeben …" autocomplete="off" required />
+      <datalist id="country-list"></datalist>
+      <button type="submit" class="btn-primary">Raten</button>
+    </form>
+  </section>
+
+  <!-- ERGEBNIS EINER RUNDE -->
+  <section id="result-screen" class="screen hidden">
+    <div class="result-card">
+      <h2 id="result-headline"></h2>
+      <p id="result-detail"></p>
+      <p id="result-points"></p>
+      <button id="next-round-button" class="btn-primary">Nächste Runde</button>
+    </div>
+  </section>
+
+  <!-- ENDSTAND -->
+  <section id="final-screen" class="screen hidden">
+    <div class="result-card">
+      <h2>Spiel beendet</h2>
+      <p id="final-summary"></p>
+      <button id="play-again-button" class="btn-primary">Nochmal spielen</button>
+    </div>
+  </section>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Google Maps JS API erst nach dem Laden der eigenen Skripte einbinden,
+    // damit initApp() als Callback schon existiert.
+    (function loadGoogleMaps() {
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY + '&callback=initApp';
+      s.async = true;
+      document.head.appendChild(s);
+    })();
+  </script>
+</body>
+</html>
