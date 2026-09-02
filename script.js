@@ -218,7 +218,7 @@ function startRound() {
 // zurück, nachdem längst die nächste Runde gestartet wurde (z. B. weil
 // mehrere Radius-Versuche nötig waren), wird sie verworfen statt das falsche
 // Panorama über die neue Runde zu legen.
-function placeOutdoorPanorama(location, radius = 50, token = ++currentRequestToken) {
+function placeOutdoorPanorama(location, radius = 50, token = ++currentRequestToken, swapAttempts = 0) {
   if (radius === 50) {
     panoLoading.classList.remove('hidden');
     guessSubmit.disabled = true;
@@ -235,14 +235,32 @@ function placeOutdoorPanorama(location, radius = 50, token = ++currentRequestTok
         panorama.setPano(data.location.pano);
         panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
         finishPanoramaLoad();
-      } else if (radius < 1000) {
-        placeOutdoorPanorama(location, radius * 4, token);
-      } else {
-        // Letzter Ausweg, falls wirklich nichts Passendes existiert
-        panorama.setPosition(target);
-        panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
-        finishPanoramaLoad();
+        return;
       }
+
+      if (radius < 5000) {
+        placeOutdoorPanorama(location, radius * 4, token, swapAttempts);
+        return;
+      }
+
+      if (swapAttempts < 3) {
+        // Selbst im 5-km-Umkreis kein Aussen-Panorama (z. B. sehr ländliche
+        // Gegend) -> anderen Ort aus dem Stapel ziehen, statt riskieren,
+        // dass ein Innenraum-Bild angezeigt wird. Der neue Ort ersetzt diese
+        // Runde vollständig (auch als korrekte Antwort).
+        const replacement = drawLocations(1)[0];
+        roundPool[currentRoundIndex] = replacement;
+        currentRoundIsSwiss = Boolean(replacement.place);
+        guessSelect.innerHTML = currentRoundIsSwiss ? swissOptionsHtml : countryOptionsHtml;
+        guessSelect.selectedIndex = 0;
+        placeOutdoorPanorama(replacement, 50, ++currentRequestToken, swapAttempts + 1);
+        return;
+      }
+
+      // Letzter Ausweg nach mehreren Ersatz-Versuchen: irgendein Panorama an der Position.
+      panorama.setPosition(target);
+      panorama.setPov({ heading: Math.random() * 360, pitch: 0 });
+      finishPanoramaLoad();
     }
   );
 }
