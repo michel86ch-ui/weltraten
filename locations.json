@@ -760,5 +760,758 @@
     "lat": 47.2692,
     "lng": 11.3933,
     "country": "Österreich"
+  },
+  {
+    "id": "fr-marseille",
+    "lat": 43.2965,
+    "lng": 5.3698,
+    "country": "Frankreich"
+  },
+  {
+    "id": "fr-lyon",
+    "lat": 45.764,
+    "lng": 4.8357,
+    "country": "Frankreich"
+  },
+  {
+    "id": "au-melbourne",
+    "lat": -37.818,
+    "lng": 144.9691,
+    "country": "Australien"
+  },
+  {
+    "id": "au-uluru",
+    "lat": -25.3444,
+    "lng": 131.0369,
+    "country": "Australien"
+  },
+  {
+    "id": "br-saopaulo",
+    "lat": -23.5613,
+    "lng": -46.6565,
+    "country": "Brasilien"
+  },
+  {
+    "id": "br-salvador",
+    "lat": -12.9718,
+    "lng": -38.5011,
+    "country": "Brasilien"
+  },
+  {
+    "id": "us-sanfrancisco",
+    "lat": 37.8199,
+    "lng": -122.4783,
+    "country": "USA"
+  },
+  {
+    "id": "us-chicago",
+    "lat": 41.8827,
+    "lng": -87.6233,
+    "country": "USA"
+  },
+  {
+    "id": "it-venice",
+    "lat": 45.4342,
+    "lng": 12.3388,
+    "country": "Italien"
+  },
+  {
+    "id": "it-florence",
+    "lat": 43.7629,
+    "lng": 11.265,
+    "country": "Italien"
+  },
+  {
+    "id": "gb-edinburgh",
+    "lat": 55.95,
+    "lng": -3.19,
+    "country": "Vereinigtes Königreich"
+  },
+  {
+    "id": "gb-liverpool",
+    "lat": 53.4001,
+    "lng": -2.9924,
+    "country": "Vereinigtes Königreich"
+  },
+  {
+    "id": "jp-kyoto",
+    "lat": 34.9949,
+    "lng": 135.785,
+    "country": "Japan"
+  },
+  {
+    "id": "jp-osaka",
+    "lat": 34.6687,
+    "lng": 135.5013,
+    "country": "Japan"
+  },
+  {
+    "id": "pe-lima",
+    "lat": -12.0464,
+    "lng": -77.0428,
+    "country": "Peru"
+  },
+  {
+    "id": "pe-cusco",
+    "lat": -13.5183,
+    "lng": -71.9781,
+    "country": "Peru"
+  },
+  {
+    "id": "in-jaipur",
+    "lat": 26.9239,
+    "lng": 75.8267,
+    "country": "Indien"
+  },
+  {
+    "id": "in-mumbai",
+    "lat": 18.922,
+    "lng": 72.8347,
+    "country": "Indien"
+  },
+  {
+    "id": "no-bergen",
+    "lat": 60.3976,
+    "lng": 5.3245,
+    "country": "Norwegen"
+  },
+  {
+    "id": "no-tromso",
+    "lat": 69.6492,
+    "lng": 18.9553,
+    "country": "Norwegen"
+  },
+  {
+    "id": "ru-stpetersburg",
+    "lat": 59.9343,
+    "lng": 30.3351,
+    "country": "Russland"
+  },
+  {
+    "id": "ru-kazan",
+    "lat": 55.7963,
+    "lng": 49.1088,
+    "country": "Russland"
+  },
+  {
+    "id": "ar-bariloche",
+    "lat": -41.1335,
+    "lng": -71.3103,
+    "country": "Argentinien"
+  },
+  {
+    "id": "ar-mendoza",
+    "lat": -32.8908,
+    "lng": -68.8272,
+    "country": "Argentinien"
+  },
+  {
+    "id": "gr-santorini",
+    "lat": 36.4614,
+    "lng": 25.3753,
+    "country": "Griechenland"
+  },
+  {
+    "id": "gr-thessaloniki",
+    "lat": 40.6401,
+    "lng": 22.9444,
+    "country": "Griechenland"
+  },
+  {
+    "id": "de-munich",
+    "lat": 48.1374,
+    "lng": 11.5755,
+    "country": "Deutschland"
+  },
+  {
+    "id": "de-hamburg",
+    "lat": 53.5445,
+    "lng": 9.9885,
+    "country": "Deutschland"
+  },
+  {
+    "id": "eg-luxor",
+    "lat": 25.7188,
+    "lng": 32.6573,
+    "country": "Ägypten"
+  },
+  {
+    "id": "eg-alexandria",
+    "lat": 31.2001,
+    "lng": 29.9187,
+    "country": "Ägypten"
+  },
+  {
+    "id": "sg-gardensbaythebay",
+    "lat": 1.2816,
+    "lng": 103.8636,
+    "country": "Singapur"
+  },
+  {
+    "id": "sg-chinatown",
+    "lat": 1.282,
+    "lng": 103.844,
+    "country": "Singapur"
+  },
+  {
+    "id": "mx-playadelcarmen",
+    "lat": 20.6296,
+    "lng": -87.0739,
+    "country": "Mexiko"
+  },
+  {
+    "id": "mx-guadalajara",
+    "lat": 20.6597,
+    "lng": -103.3496,
+    "country": "Mexiko"
+  },
+  {
+    "id": "ke-mombasa",
+    "lat": -4.0435,
+    "lng": 39.6682,
+    "country": "Kenia"
+  },
+  {
+    "id": "ke-maasaimara",
+    "lat": -1.5021,
+    "lng": 35.1436,
+    "country": "Kenia"
+  },
+  {
+    "id": "fi-rovaniemi",
+    "lat": 66.5039,
+    "lng": 25.7294,
+    "country": "Finnland"
+  },
+  {
+    "id": "fi-turku",
+    "lat": 60.4518,
+    "lng": 22.2666,
+    "country": "Finnland"
+  },
+  {
+    "id": "cz-ceskykrumlov",
+    "lat": 48.8127,
+    "lng": 14.3175,
+    "country": "Tschechien"
+  },
+  {
+    "id": "cz-brno",
+    "lat": 49.1951,
+    "lng": 16.6068,
+    "country": "Tschechien"
+  },
+  {
+    "id": "tr-cappadocia",
+    "lat": 38.6431,
+    "lng": 34.8286,
+    "country": "Türkei"
+  },
+  {
+    "id": "tr-antalya",
+    "lat": 36.8969,
+    "lng": 30.7133,
+    "country": "Türkei"
+  },
+  {
+    "id": "nz-queenstown",
+    "lat": -45.0312,
+    "lng": 168.6626,
+    "country": "Neuseeland"
+  },
+  {
+    "id": "nz-wellington",
+    "lat": -41.2865,
+    "lng": 174.7762,
+    "country": "Neuseeland"
+  },
+  {
+    "id": "ae-abudhabi",
+    "lat": 24.4128,
+    "lng": 54.475,
+    "country": "Vereinigte Arabische Emirate"
+  },
+  {
+    "id": "ae-dubaimarina",
+    "lat": 25.0805,
+    "lng": 55.1403,
+    "country": "Vereinigte Arabische Emirate"
+  },
+  {
+    "id": "es-barcelona",
+    "lat": 41.4036,
+    "lng": 2.1744,
+    "country": "Spanien"
+  },
+  {
+    "id": "es-sevilla",
+    "lat": 37.3773,
+    "lng": -5.9869,
+    "country": "Spanien"
+  },
+  {
+    "id": "pt-porto",
+    "lat": 41.1408,
+    "lng": -8.611,
+    "country": "Portugal"
+  },
+  {
+    "id": "pt-sintra",
+    "lat": 38.7876,
+    "lng": -9.3906,
+    "country": "Portugal"
+  },
+  {
+    "id": "pl-warsaw",
+    "lat": 52.2496,
+    "lng": 21.0122,
+    "country": "Polen"
+  },
+  {
+    "id": "pl-gdansk",
+    "lat": 54.3475,
+    "lng": 18.6534,
+    "country": "Polen"
+  },
+  {
+    "id": "nl-rotterdam",
+    "lat": 51.9187,
+    "lng": 4.483,
+    "country": "Niederlande"
+  },
+  {
+    "id": "nl-keukenhof",
+    "lat": 52.2693,
+    "lng": 4.547,
+    "country": "Niederlande"
+  },
+  {
+    "id": "be-bruges",
+    "lat": 51.2093,
+    "lng": 3.2247,
+    "country": "Belgien"
+  },
+  {
+    "id": "be-antwerp",
+    "lat": 51.2194,
+    "lng": 4.4025,
+    "country": "Belgien"
+  },
+  {
+    "id": "se-gothenburg",
+    "lat": 57.7089,
+    "lng": 11.9746,
+    "country": "Schweden"
+  },
+  {
+    "id": "se-malmo",
+    "lat": 55.605,
+    "lng": 13.0038,
+    "country": "Schweden"
+  },
+  {
+    "id": "dk-aarhus",
+    "lat": 56.1496,
+    "lng": 10.2134,
+    "country": "Dänemark"
+  },
+  {
+    "id": "dk-odense",
+    "lat": 55.3959,
+    "lng": 10.3883,
+    "country": "Dänemark"
+  },
+  {
+    "id": "ie-cork",
+    "lat": 51.8985,
+    "lng": -8.4756,
+    "country": "Irland"
+  },
+  {
+    "id": "ie-galway",
+    "lat": 53.2707,
+    "lng": -9.0568,
+    "country": "Irland"
+  },
+  {
+    "id": "hu-szeged",
+    "lat": 46.253,
+    "lng": 20.1414,
+    "country": "Ungarn"
+  },
+  {
+    "id": "hu-debrecen",
+    "lat": 47.5316,
+    "lng": 21.6273,
+    "country": "Ungarn"
+  },
+  {
+    "id": "hr-split",
+    "lat": 43.5081,
+    "lng": 16.4402,
+    "country": "Kroatien"
+  },
+  {
+    "id": "hr-zagreb",
+    "lat": 45.815,
+    "lng": 15.9819,
+    "country": "Kroatien"
+  },
+  {
+    "id": "ca-vancouver",
+    "lat": 49.2827,
+    "lng": -123.1207,
+    "country": "Kanada"
+  },
+  {
+    "id": "ca-montreal",
+    "lat": 45.5017,
+    "lng": -73.5673,
+    "country": "Kanada"
+  },
+  {
+    "id": "kr-busan",
+    "lat": 35.1587,
+    "lng": 129.1604,
+    "country": "Südkorea"
+  },
+  {
+    "id": "kr-jeju",
+    "lat": 33.4996,
+    "lng": 126.5312,
+    "country": "Südkorea"
+  },
+  {
+    "id": "th-chiangmai",
+    "lat": 18.7883,
+    "lng": 98.9853,
+    "country": "Thailand"
+  },
+  {
+    "id": "th-phuket",
+    "lat": 7.8965,
+    "lng": 98.2965,
+    "country": "Thailand"
+  },
+  {
+    "id": "vn-hcmc",
+    "lat": 10.7769,
+    "lng": 106.7009,
+    "country": "Vietnam"
+  },
+  {
+    "id": "vn-hoian",
+    "lat": 15.8801,
+    "lng": 108.338,
+    "country": "Vietnam"
+  },
+  {
+    "id": "id-bali",
+    "lat": -8.5069,
+    "lng": 115.2625,
+    "country": "Indonesien"
+  },
+  {
+    "id": "id-yogyakarta",
+    "lat": -7.6079,
+    "lng": 110.2038,
+    "country": "Indonesien"
+  },
+  {
+    "id": "ph-cebu",
+    "lat": 10.3157,
+    "lng": 123.8854,
+    "country": "Philippinen"
+  },
+  {
+    "id": "ph-elnido",
+    "lat": 11.1949,
+    "lng": 119.4127,
+    "country": "Philippinen"
+  },
+  {
+    "id": "my-penang",
+    "lat": 5.4141,
+    "lng": 100.3288,
+    "country": "Malaysia"
+  },
+  {
+    "id": "my-malacca",
+    "lat": 2.1896,
+    "lng": 102.2501,
+    "country": "Malaysia"
+  },
+  {
+    "id": "za-johannesburg",
+    "lat": -26.2041,
+    "lng": 28.0473,
+    "country": "Südafrika"
+  },
+  {
+    "id": "za-kruger",
+    "lat": -24.9964,
+    "lng": 31.5546,
+    "country": "Südafrika"
+  },
+  {
+    "id": "ma-fes",
+    "lat": 34.0669,
+    "lng": -4.9778,
+    "country": "Marokko"
+  },
+  {
+    "id": "ma-chefchaouen",
+    "lat": 35.1688,
+    "lng": -5.2636,
+    "country": "Marokko"
+  },
+  {
+    "id": "ng-abuja",
+    "lat": 9.0765,
+    "lng": 7.3986,
+    "country": "Nigeria"
+  },
+  {
+    "id": "ng-ibadan",
+    "lat": 7.3775,
+    "lng": 3.947,
+    "country": "Nigeria"
+  },
+  {
+    "id": "cl-valparaiso",
+    "lat": -33.0472,
+    "lng": -71.6127,
+    "country": "Chile"
+  },
+  {
+    "id": "cl-atacama",
+    "lat": -22.9098,
+    "lng": -68.1997,
+    "country": "Chile"
+  },
+  {
+    "id": "co-cartagena",
+    "lat": 10.391,
+    "lng": -75.4794,
+    "country": "Kolumbien"
+  },
+  {
+    "id": "co-medellin",
+    "lat": 6.2442,
+    "lng": -75.5812,
+    "country": "Kolumbien"
+  },
+  {
+    "id": "is-akureyri",
+    "lat": 65.6835,
+    "lng": -18.0878,
+    "country": "Island"
+  },
+  {
+    "id": "is-vik",
+    "lat": 63.4186,
+    "lng": -19.006,
+    "country": "Island"
+  },
+  {
+    "id": "il-jerusalem",
+    "lat": 31.7767,
+    "lng": 35.2345,
+    "country": "Israel"
+  },
+  {
+    "id": "il-haifa",
+    "lat": 32.794,
+    "lng": 34.9896,
+    "country": "Israel"
+  },
+  {
+    "id": "ua-kyiv",
+    "lat": 50.4501,
+    "lng": 30.5234,
+    "country": "Ukraine"
+  },
+  {
+    "id": "ua-odesa",
+    "lat": 46.4825,
+    "lng": 30.7233,
+    "country": "Ukraine"
+  },
+  {
+    "id": "ro-brasov",
+    "lat": 45.6427,
+    "lng": 25.5887,
+    "country": "Rumänien"
+  },
+  {
+    "id": "ro-sibiu",
+    "lat": 45.7983,
+    "lng": 24.1256,
+    "country": "Rumänien"
+  },
+  {
+    "id": "bg-plovdiv",
+    "lat": 42.1354,
+    "lng": 24.7453,
+    "country": "Bulgarien"
+  },
+  {
+    "id": "bg-varna",
+    "lat": 43.2141,
+    "lng": 27.9147,
+    "country": "Bulgarien"
+  },
+  {
+    "id": "si-bled",
+    "lat": 46.3683,
+    "lng": 14.1146,
+    "country": "Slowenien"
+  },
+  {
+    "id": "si-piran",
+    "lat": 45.5285,
+    "lng": 13.5683,
+    "country": "Slowenien"
+  },
+  {
+    "id": "ee-tartu",
+    "lat": 58.378,
+    "lng": 26.729,
+    "country": "Estland"
+  },
+  {
+    "id": "ee-parnu",
+    "lat": 58.3859,
+    "lng": 24.4971,
+    "country": "Estland"
+  },
+  {
+    "id": "lv-jurmala",
+    "lat": 56.9682,
+    "lng": 23.771,
+    "country": "Lettland"
+  },
+  {
+    "id": "lv-sigulda",
+    "lat": 57.1533,
+    "lng": 24.8579,
+    "country": "Lettland"
+  },
+  {
+    "id": "lt-kaunas",
+    "lat": 54.8985,
+    "lng": 23.9036,
+    "country": "Litauen"
+  },
+  {
+    "id": "lt-klaipeda",
+    "lat": 55.7033,
+    "lng": 21.1443,
+    "country": "Litauen"
+  },
+  {
+    "id": "ch-zuerich2",
+    "lat": 47.3667,
+    "lng": 8.5451,
+    "country": "Schweiz",
+    "place": "Zürich"
+  },
+  {
+    "id": "ch-bern2",
+    "lat": 46.9466,
+    "lng": 7.4523,
+    "country": "Schweiz",
+    "place": "Bern"
+  },
+  {
+    "id": "ch-basel2",
+    "lat": 47.557,
+    "lng": 7.5906,
+    "country": "Schweiz",
+    "place": "Basel"
+  },
+  {
+    "id": "ch-genf2",
+    "lat": 46.207,
+    "lng": 6.156,
+    "country": "Schweiz",
+    "place": "Genf"
+  },
+  {
+    "id": "ch-lausanne2",
+    "lat": 46.5218,
+    "lng": 6.6337,
+    "country": "Schweiz",
+    "place": "Lausanne"
+  },
+  {
+    "id": "ch-luzern2",
+    "lat": 47.0578,
+    "lng": 8.3106,
+    "country": "Schweiz",
+    "place": "Luzern"
+  },
+  {
+    "id": "ch-lugano2",
+    "lat": 46.0101,
+    "lng": 8.96,
+    "country": "Schweiz",
+    "place": "Lugano"
+  },
+  {
+    "id": "ch-interlaken2",
+    "lat": 46.6881,
+    "lng": 7.8558,
+    "country": "Schweiz",
+    "place": "Interlaken"
+  },
+  {
+    "id": "ch-davos2",
+    "lat": 46.814,
+    "lng": 9.828,
+    "country": "Schweiz",
+    "place": "Davos"
+  },
+  {
+    "id": "ch-montreux2",
+    "lat": 46.4142,
+    "lng": 6.9273,
+    "country": "Schweiz",
+    "place": "Montreux"
+  },
+  {
+    "id": "ch-thun2",
+    "lat": 46.7565,
+    "lng": 7.6266,
+    "country": "Schweiz",
+    "place": "Thun"
+  },
+  {
+    "id": "ch-zermatt2",
+    "lat": 46.018,
+    "lng": 7.754,
+    "country": "Schweiz",
+    "place": "Zermatt"
+  },
+  {
+    "id": "ch-grindelwald2",
+    "lat": 46.6205,
+    "lng": 8.035,
+    "country": "Schweiz",
+    "place": "Grindelwald"
+  },
+  {
+    "id": "ch-appenzell2",
+    "lat": 47.33,
+    "lng": 9.413,
+    "country": "Schweiz",
+    "place": "Appenzell"
+  },
+  {
+    "id": "ch-stmoritz2",
+    "lat": 46.498,
+    "lng": 9.842,
+    "country": "Schweiz",
+    "place": "St. Moritz"
   }
 ]
