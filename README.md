@@ -119,12 +119,12 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
        match /games/{gameCode} {
          allow read: if true;
          allow create: if gameCode.matches('^[A-Za-z0-9]{4,12}$')
-                       && request.resource.data.keys().hasOnly(['createdBy', 'createdAt', 'locationIds'])
+                       && request.resource.data.keys().hasOnly(['createdBy', 'createdAt', 'rounds'])
                        && request.resource.data.createdBy is string
                        && request.resource.data.createdBy.size() > 0
                        && request.resource.data.createdBy.size() <= 20
-                       && request.resource.data.locationIds is list
-                       && request.resource.data.locationIds.size() == 10;
+                       && request.resource.data.rounds is list
+                       && request.resource.data.rounds.size() == 10;
          allow update, delete: if false;
 
          match /players/{playerId} {
@@ -153,22 +153,25 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
    }
    ```
 
-   Neu dabei: `games/{gameCode}` selbst (wer hat's erstellt, wann, und die
-   **fix berechneten** `locationIds` für dieses Spiel). Zwei Gründe dafür:
-   erstens braucht es das für die Startseite, die jetzt **alle**
-   existierenden Spiele auflistet, nicht nur die auf dem eigenen Gerät
-   bekannten. Zweitens – wichtiger – verhindert es, dass eine spätere
-   Änderung an `locations.json` (z. B. Ersatz eines gemeldeten Bilds) ein
-   noch offenes Spiel für neu einsteigende Spieler auf andere Orte
-   umstellt: Die 10 Orte werden einmalig beim Erstellen berechnet und
-   gespeichert, nicht bei jedem Beitritt neu aus der aktuellen
-   `locations.json` abgeleitet (`resolveRoundLocations()` in `script.js`).
+   Neu dabei: `games/{gameCode}` selbst (wer hat's erstellt, wann, und ein
+   **kompletter, eingefrorener Snapshot** der 10 Orte inkl. Koordinaten unter
+   `rounds`). Zwei Gründe dafür: erstens braucht es das für die Startseite,
+   die jetzt **alle** existierenden Spiele auflistet, nicht nur die auf dem
+   eigenen Gerät bekannten. Zweitens – wichtiger – macht ein einmal
+   erstelltes Spiel komplett unabhängig von späteren Änderungen an
+   `locations.json`: Nicht nur die Auswahl der 10 Orte steht fest, sondern
+   auch ihre exakten Koordinaten. Würde man nur die `id` referenzieren und
+   die Koordinaten live nachladen, könnten zwei Spieler desselben noch
+   offenen Spiels unterschiedliche Panoramen für dieselbe Runde sehen, falls
+   dazwischen ein gemeldetes Bild korrigiert wurde. Mit dem vollen Snapshot
+   passiert das nicht mehr (`resolveRoundLocations()` in `script.js`).
 
-   **Workflow-Empfehlung fürs Ersetzen gemeldeter Bilder:** Wenn möglich,
-   Koordinaten eines gemeldeten Orts direkt in seinem bestehenden Eintrag in
-   `locations.json` überschreiben (gleiche `id` behalten) statt den Eintrag
-   zu löschen und einen neuen anzulegen. Dann verbessert sich der Ort auch
-   für schon laufende Spiele automatisch, ohne die Rundenstruktur zu stören.
+   **Workflow fürs Bereinigen gemeldeter Bilder:** Koordinaten eines
+   gemeldeten Orts einfach direkt in seinem bestehenden Eintrag in
+   `locations.json` überschreiben (gleiche `id` behalten). Das wirkt sich
+   nur auf **neu erstellte** Spiele ab diesem Zeitpunkt aus – bereits
+   erstellte Spiele (offen oder abgeschlossen) bleiben durch ihren Snapshot
+   exakt so, wie sie beim Erstellen waren.
    Nur falls eine `id` komplett wegfallen muss, greift für alte, davon
    betroffene Spiele ein deterministischer Ersatz-Ort als Fallback.
 

@@ -222,27 +222,36 @@ const db = firebase.firestore();
 // spaeter ALLE existierenden Spiele auflisten kann - nicht nur die, deren
 // Link man selbst zugeschickt bekommen hat.
 async function createGameRecord(code, hostName) {
-  // Orte JETZT fix berechnen und speichern - nicht bei jedem Aufruf live neu
-  // aus locations.json ableiten. Sonst wuerde eine spaetere Aenderung an
-  // locations.json (z.B. Ersatz eines gemeldeten Bilds) ein noch offenes
-  // Spiel fuer neu einsteigende Spieler auf andere Orte umstellen.
-  const locationIds = deterministicLocations(code, MP_ROUNDS).map((l) => l.id);
+  // Kompletten Orts-Datensatz (inkl. Koordinaten) JETZT einfrieren und
+  // speichern - nicht nur die ID. Sonst wuerden spaetere Koordinaten-
+  // Korrekturen an locations.json (z.B. Ersatz eines gemeldeten Bilds) dazu
+  // fuehren, dass Spieler A und Spieler B im selben, noch offenen Spiel
+  // unterschiedliche Panoramen fuer dieselbe Runde sehen.
+  const rounds = deterministicLocations(code, MP_ROUNDS).map((l) => ({
+    id: l.id,
+    lat: l.lat,
+    lng: l.lng,
+    country: l.country,
+    place: l.place || null,
+  }));
   await db.collection('games').doc(code).set({
     createdBy: hostName,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    locationIds,
+    rounds,
   });
 }
 
-// Liest die beim Erstellen fixierten Orte eines Spiels. Falls einzelne IDs
-// zwischenzeitlich aus locations.json entfernt wurden, wird deterministisch
-// (gleicher Ersatz fuer alle Spieler) ein Ausweich-Ort gezogen. Fehlt der
-// gesamte Datensatz (z.B. sehr alte Spiele von vor diesem Update), wird auf
-// die alte Live-Berechnung zurueckgefallen.
+// Liest die beim Erstellen eingefrorenen Orte eines Spiels - unabhaengig
+// davon, was seither an locations.json geaendert wurde. Faellt fuer sehr
+// alte Spiele (vor diesem Update erstellt, nur locationIds statt rounds
+// gespeichert) auf die ID-basierte bzw. Live-Berechnung zurueck.
 async function resolveRoundLocations(code) {
   try {
     const doc = await db.collection('games').doc(code).get();
     const data = doc.data();
+    if (data && Array.isArray(data.rounds) && data.rounds.length === MP_ROUNDS) {
+      return data.rounds;
+    }
     if (data && Array.isArray(data.locationIds) && data.locationIds.length === MP_ROUNDS) {
       return data.locationIds.map((id, index) => {
         const found = locations.find((l) => l.id === id);
