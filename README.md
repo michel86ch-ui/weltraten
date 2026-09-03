@@ -119,10 +119,12 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
        match /games/{gameCode} {
          allow read: if true;
          allow create: if gameCode.matches('^[A-Za-z0-9]{4,12}$')
-                       && request.resource.data.keys().hasOnly(['createdBy', 'createdAt'])
+                       && request.resource.data.keys().hasOnly(['createdBy', 'createdAt', 'locationIds'])
                        && request.resource.data.createdBy is string
                        && request.resource.data.createdBy.size() > 0
-                       && request.resource.data.createdBy.size() <= 20;
+                       && request.resource.data.createdBy.size() <= 20
+                       && request.resource.data.locationIds is list
+                       && request.resource.data.locationIds.size() == 10;
          allow update, delete: if false;
 
          match /players/{playerId} {
@@ -151,12 +153,29 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
    }
    ```
 
-   Neu dabei: `games/{gameCode}` selbst (wer hat's erstellt, wann) – braucht
-   es für die Startseite, die jetzt **alle** existierenden Spiele auflistet,
-   nicht nur die auf dem eigenen Gerät bekannten. Rest wie gehabt: jeder darf
-   lesen und **einmal** plausible Daten anlegen (Name ≤ 20 Zeichen, Score
-   0–50'000, Meldegrund nur "too_easy"/"impossible"), nichts nachträglich
-   ändern oder löschen. Alles ausserhalb dieser Pfade ist komplett gesperrt.
+   Neu dabei: `games/{gameCode}` selbst (wer hat's erstellt, wann, und die
+   **fix berechneten** `locationIds` für dieses Spiel). Zwei Gründe dafür:
+   erstens braucht es das für die Startseite, die jetzt **alle**
+   existierenden Spiele auflistet, nicht nur die auf dem eigenen Gerät
+   bekannten. Zweitens – wichtiger – verhindert es, dass eine spätere
+   Änderung an `locations.json` (z. B. Ersatz eines gemeldeten Bilds) ein
+   noch offenes Spiel für neu einsteigende Spieler auf andere Orte
+   umstellt: Die 10 Orte werden einmalig beim Erstellen berechnet und
+   gespeichert, nicht bei jedem Beitritt neu aus der aktuellen
+   `locations.json` abgeleitet (`resolveRoundLocations()` in `script.js`).
+
+   **Workflow-Empfehlung fürs Ersetzen gemeldeter Bilder:** Wenn möglich,
+   Koordinaten eines gemeldeten Orts direkt in seinem bestehenden Eintrag in
+   `locations.json` überschreiben (gleiche `id` behalten) statt den Eintrag
+   zu löschen und einen neuen anzulegen. Dann verbessert sich der Ort auch
+   für schon laufende Spiele automatisch, ohne die Rundenstruktur zu stören.
+   Nur falls eine `id` komplett wegfallen muss, greift für alte, davon
+   betroffene Spiele ein deterministischer Ersatz-Ort als Fallback.
+
+   Rest wie gehabt: jeder darf lesen und **einmal** plausible Daten anlegen
+   (Name ≤ 20 Zeichen, Score 0–50'000, Meldegrund nur
+   "too_easy"/"impossible"), nichts nachträglich ändern oder löschen. Alles
+   ausserhalb dieser Pfade ist komplett gesperrt.
 
    **"Bild melden"-Funktion:** Im Spiel gibt's oben rechts einen Button
    "⚑ Bild melden" (nur während einer laufenden Runde sichtbar). Meldungen

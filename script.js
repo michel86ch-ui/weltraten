@@ -222,10 +222,37 @@ const db = firebase.firestore();
 // spaeter ALLE existierenden Spiele auflisten kann - nicht nur die, deren
 // Link man selbst zugeschickt bekommen hat.
 async function createGameRecord(code, hostName) {
+  // Orte JETZT fix berechnen und speichern - nicht bei jedem Aufruf live neu
+  // aus locations.json ableiten. Sonst wuerde eine spaetere Aenderung an
+  // locations.json (z.B. Ersatz eines gemeldeten Bilds) ein noch offenes
+  // Spiel fuer neu einsteigende Spieler auf andere Orte umstellen.
+  const locationIds = deterministicLocations(code, MP_ROUNDS).map((l) => l.id);
   await db.collection('games').doc(code).set({
     createdBy: hostName,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    locationIds,
   });
+}
+
+// Liest die beim Erstellen fixierten Orte eines Spiels. Falls einzelne IDs
+// zwischenzeitlich aus locations.json entfernt wurden, wird deterministisch
+// (gleicher Ersatz fuer alle Spieler) ein Ausweich-Ort gezogen. Fehlt der
+// gesamte Datensatz (z.B. sehr alte Spiele von vor diesem Update), wird auf
+// die alte Live-Berechnung zurueckgefallen.
+async function resolveRoundLocations(code) {
+  try {
+    const doc = await db.collection('games').doc(code).get();
+    const data = doc.data();
+    if (data && Array.isArray(data.locationIds) && data.locationIds.length === MP_ROUNDS) {
+      return data.locationIds.map((id, index) => {
+        const found = locations.find((l) => l.id === id);
+        return found || deterministicShuffle(locations, `${code}-missing-${index}`)[0];
+      });
+    }
+  } catch (e) {
+    console.error('Spiel-Orte konnten nicht geladen werden, verwende Fallback:', e);
+  }
+  return deterministicLocations(code, MP_ROUNDS);
 }
 
 async function fetchAllGames() {
@@ -401,7 +428,7 @@ function goToLanding() {
 // ---------------------------------------------------------------
 // Namen-Screen (SP-Start, MP-Erstellung, MP-Beitritt)
 // ---------------------------------------------------------------
-startButton.addEventListener('click', () => {
+startButton.addEventListener('click', async () => {
   const name = usernameInput.value.trim();
   if (!name) {
     usernameInput.focus();
@@ -411,10 +438,15 @@ startButton.addEventListener('click', () => {
   localStorage.setItem('weltraten_name', playerName);
 
   if (pendingLoginContext.type === 'mp-create') {
-    createGameRecord(pendingLoginContext.code, playerName).catch((e) => {
+    startButton.disabled = true;
+    try {
+      await createGameRecord(pendingLoginContext.code, playerName);
+      showInviteScreen(pendingLoginContext.code);
+    } catch (e) {
       console.error('Spiel-Eintrag konnte nicht angelegt werden:', e);
-    });
-    showInviteScreen(pendingLoginContext.code);
+      alert('Spiel konnte nicht erstellt werden. Bitte nochmal versuchen.');
+    }
+    startButton.disabled = false;
   } else if (pendingLoginContext.type === 'mp-join') {
     startMultiplayerRounds(pendingLoginContext.code);
   } else {
@@ -463,14 +495,14 @@ function startGame() {
 // ---------------------------------------------------------------
 // Spielablauf: Multiplayer
 // ---------------------------------------------------------------
-function startMultiplayerRounds(code) {
+async function startMultiplayerRounds(code) {
   isMultiplayer = true;
   currentGameCode = code;
   roundsTotal = MP_ROUNDS;
   totalScore = 0;
   currentRoundIndex = 0;
   roundResults = [];
-  roundPool = deterministicLocations(code, roundsTotal);
+  roundPool = await resolveRoundLocations(code);
 
   hudPlayer.textContent = playerName;
   showScreen(gameScreen);
