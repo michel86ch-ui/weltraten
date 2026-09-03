@@ -48,7 +48,7 @@ const adminScreen = document.getElementById('admin-screen');
 
 const allScreens = [
   landingScreen, loginScreen, gameScreen, resultScreen, finalScreen,
-  inviteScreen, mpLockedScreen, leaderboardScreen, adminScreen,
+  inviteScreen, mpLockedScreen, leaderboardScreen, adminScreen, profileScreen,
 ];
 
 function showScreen(screen) {
@@ -59,10 +59,19 @@ function showScreen(screen) {
 const landingSingleplayerButton = document.getElementById('landing-singleplayer-button');
 const landingMultiplayerButton = document.getElementById('landing-multiplayer-button');
 const landingMpList = document.getElementById('landing-mp-list');
+const landingUser = document.getElementById('landing-user');
 
 const loginSubtitle = document.getElementById('login-subtitle');
 const usernameInput = document.getElementById('username-input');
 const startButton = document.getElementById('start-button');
+const loginNameNote = document.getElementById('login-name-note');
+
+const profileScreen = document.getElementById('profile-screen');
+const profileName = document.getElementById('profile-name');
+const profileStats = document.getElementById('profile-stats');
+const profileGames = document.getElementById('profile-games');
+const profileBackButton = document.getElementById('profile-back-button');
+const profileRenameButton = document.getElementById('profile-rename-button');
 
 const inviteCodeLabel = document.getElementById('invite-code');
 const inviteLinkInput = document.getElementById('invite-link-input');
@@ -234,6 +243,34 @@ const db = firebase.firestore();
 // Wird beim Erstellen eines MP-Spiels geschrieben, damit die Startseite
 // spaeter ALLE existierenden Spiele auflisten kann - nicht nur die, deren
 // Link man selbst zugeschickt bekommen hat.
+// ---------------------------------------------------------------
+// Spielerprofile: players/{nameKey} mit dem angezeigten Namen.
+// Bewusst ohne Passwort - der Eintrag dient der Wiedererkennung und
+// der Statistik, nicht als Zugriffsschutz. Wer denselben Namen
+// eingibt, landet im selben Profil.
+// ---------------------------------------------------------------
+function playerKey(name) {
+  return normalize(name).replace(/[^a-z0-9._-]/g, '_').slice(0, 40);
+}
+
+// Legt das Profil an, falls es noch nicht existiert.
+// Rueckgabe: true = Name war neu, false = Profil bestand bereits.
+async function registerPlayer(name) {
+  const ref = db.collection('players').doc(playerKey(name));
+  const doc = await ref.get();
+  if (doc.exists) return false;
+  await ref.set({
+    displayName: name,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  return true;
+}
+
+async function playerExists(name) {
+  const doc = await db.collection('players').doc(playerKey(name)).get();
+  return doc.exists;
+}
+
 async function createGameRecord(code, hostName) {
   // Kompletten Orts-Datensatz (inkl. Koordinaten) JETZT einfrieren und
   // speichern - nicht nur die ID. Sonst wuerden spaetere Koordinaten-
@@ -521,8 +558,94 @@ function flashButtonFeedback(buttonEl, message) {
 // ---------------------------------------------------------------
 // Startseite
 // ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// Profil: Statistik ueber alle Multiplayer-Spiele dieses Namens.
+// ---------------------------------------------------------------
+async function showProfileScreen() {
+  showScreen(profileScreen);
+  profileName.textContent = playerName || '–';
+  profileStats.innerHTML = '<p class="mp-list-empty">Lade …</p>';
+  profileGames.innerHTML = '';
+
+  try {
+    const games = await fetchAllGames();
+    const allEntries = await Promise.all(
+      games.map((g) => fetchLeaderboard(g.code).catch(() => []))
+    );
+
+    const mine = [];
+    games.forEach((g, i) => {
+      const entries = allEntries[i];
+      const idx = entries.findIndex(
+        (e) => normalize(String(e.name ?? '')) === normalize(playerName)
+      );
+      if (idx >= 0) {
+        mine.push({
+          code: g.code,
+          score: Number(entries[idx].score) || 0,
+          rank: idx + 1,
+          of: entries.length,
+        });
+      }
+    });
+
+    const total = mine.reduce((sum, m) => sum + m.score, 0);
+    const best = mine.reduce((max, m) => Math.max(max, m.score), 0);
+    const avg = mine.length ? Math.round(total / mine.length) : 0;
+    const wins = mine.filter((m) => m.rank === 1 && m.of > 1).length;
+
+    const stat = (value, label) =>
+      `<div class="profile-stat"><span class="profile-stat-value">${value}</span><span class="profile-stat-label">${label}</span></div>`;
+
+    profileStats.innerHTML =
+      '<div class="profile-stats-grid">' +
+      stat(mine.length, 'Spiele') +
+      stat(total.toLocaleString('de-CH'), 'Punkte total') +
+      stat(avg.toLocaleString('de-CH'), 'Schnitt pro Spiel') +
+      stat(best.toLocaleString('de-CH'), 'Bestes Spiel') +
+      stat(wins, wins === 1 ? 'Sieg' : 'Siege') +
+      stat(MP_ROUNDS * MAX_POINTS, 'Maximum möglich') +
+      '</div>';
+
+    profileGames.innerHTML = mine.length
+      ? mine
+          .map(
+            (m) =>
+              `<div class="profile-game"><div><strong>${escapeHtml(
+                m.code
+              )}</strong><br><span class="profile-game-rank">Platz ${m.rank} von ${
+                m.of
+              }</span></div><span class="profile-game-score">${m.score.toLocaleString(
+                'de-CH'
+              )}</span></div>`
+          )
+          .join('')
+      : '<p class="mp-list-empty">Noch keine Multiplayer-Spiele gespielt.</p>';
+  } catch (e) {
+    console.error('Profil konnte nicht geladen werden:', e);
+    profileStats.innerHTML = '<p class="mp-list-empty">Profil konnte nicht geladen werden.</p>';
+  }
+}
+
+profileBackButton.addEventListener('click', goToLanding);
+
+profileRenameButton.addEventListener('click', () => {
+  pendingLoginContext = { type: 'change' };
+  loginSubtitle.textContent = 'Neuer Spielername – bisherige Ergebnisse bleiben beim alten Namen.';
+  loginNameNote.classList.add('hidden');
+  usernameInput.value = playerName;
+  showScreen(loginScreen);
+});
+
+landingUser.addEventListener('click', (event) => {
+  if (event.target.closest('button')) showProfileScreen();
+});
+
 async function showLandingScreen() {
   showScreen(landingScreen);
+  landingUser.innerHTML = `<span>Angemeldet als <strong>${escapeHtml(
+    playerName
+  )}</strong></span><button type="button">Profil</button>`;
   landingMpList.innerHTML = '<p class="mp-list-heading">Lade Spiele …</p>';
 
   let games = [];
@@ -600,26 +723,25 @@ landingMpList.addEventListener('click', (event) => {
   if (btn.dataset.action === 'lb') {
     showLeaderboardScreen(code);
   } else {
-    pendingLoginContext = { type: 'mp-join', code };
-    loginSubtitle.textContent = `Multiplayer-Spiel ${code} beitreten – wie heisst du?`;
-    usernameInput.value = playerName;
-    showScreen(loginScreen);
+    startMultiplayerRounds(code);
   }
 });
 
 landingSingleplayerButton.addEventListener('click', () => {
-  pendingLoginContext = { type: 'sp' };
-  loginSubtitle.textContent = 'Du landest irgendwo auf der Welt. Schau dich um und errate das Land.';
-  usernameInput.value = playerName;
-  showScreen(loginScreen);
+  startGame();
 });
 
-landingMultiplayerButton.addEventListener('click', () => {
+landingMultiplayerButton.addEventListener('click', async () => {
   const code = generateGameCode();
-  pendingLoginContext = { type: 'mp-create', code };
-  loginSubtitle.textContent = `Multiplayer-Spiel ${code} erstellen – wie heisst du?`;
-  usernameInput.value = playerName;
-  showScreen(loginScreen);
+  landingMultiplayerButton.disabled = true;
+  try {
+    await createGameRecord(code, playerName);
+    showInviteScreen(code);
+  } catch (e) {
+    console.error('Spiel-Eintrag konnte nicht angelegt werden:', e);
+    alert('Spiel konnte nicht erstellt werden. Bitte nochmal versuchen.');
+  }
+  landingMultiplayerButton.disabled = false;
 });
 
 function goToLanding() {
@@ -636,23 +758,39 @@ startButton.addEventListener('click', async () => {
     usernameInput.focus();
     return;
   }
+
+  startButton.disabled = true;
+  loginNameNote.classList.add('hidden');
+
+  // Bestehendes Profil? Dann nur Hinweis, kein Blockieren - der Name ist
+  // bewusst keine geschuetzte Identitaet.
+  let known = false;
+  try {
+    known = await playerExists(name);
+    if (!known) await registerPlayer(name);
+  } catch (e) {
+    console.error('Profil konnte nicht angelegt/geprueft werden:', e);
+  }
+
   playerName = name;
   localStorage.setItem('weltraten_name', playerName);
+  startButton.disabled = false;
 
-  if (pendingLoginContext.type === 'mp-create') {
-    startButton.disabled = true;
-    try {
-      await createGameRecord(pendingLoginContext.code, playerName);
-      showInviteScreen(pendingLoginContext.code);
-    } catch (e) {
-      console.error('Spiel-Eintrag konnte nicht angelegt werden:', e);
-      alert('Spiel konnte nicht erstellt werden. Bitte nochmal versuchen.');
-    }
-    startButton.disabled = false;
-  } else if (pendingLoginContext.type === 'mp-join') {
-    startMultiplayerRounds(pendingLoginContext.code);
+  if (known && !pendingLoginContext.acknowledgedExisting) {
+    // Einmal darauf hinweisen, dass der Name schon existiert.
+    loginNameNote.textContent = `„${name}“ gibt es schon – ihr teilt euch dann dasselbe Profil. Mit vorname.nachname bleibt es eindeutig. Nochmal „Weiter“ tippen, wenn das so gewollt ist.`;
+    loginNameNote.classList.remove('hidden');
+    pendingLoginContext = { ...pendingLoginContext, acknowledgedExisting: true };
+    return;
+  }
+
+  const ctx = pendingLoginContext;
+  pendingLoginContext = { type: 'sp' };
+
+  if (ctx.type === 'mp-join' && ctx.code) {
+    startMultiplayerRounds(ctx.code);
   } else {
-    startGame();
+    goToLanding();
   }
 });
 
@@ -1099,15 +1237,24 @@ async function boot() {
   const rawCode = params.get('game');
   const code = isValidGameCode(rawCode) ? rawCode.toUpperCase() : null;
 
+  // Beim ersten Besuch zuerst den Spielernamen waehlen lassen. Danach
+  // wird nie wieder danach gefragt (aenderbar ueber das Profil).
+  if (!playerName) {
+    pendingLoginContext = code ? { type: 'mp-join', code } : { type: 'sp' };
+    loginSubtitle.textContent = code
+      ? `Spiel ${code} beitreten – wähle zuerst deinen Spielernamen.`
+      : 'Wähle deinen Spielernamen – er wird für alle Ranglisten verwendet.';
+    usernameInput.value = '';
+    showScreen(loginScreen);
+    return;
+  }
+
   if (code) {
     const info = getCompletedInfo(code);
     if (info) {
       showMpLockedScreen(code, info);
     } else {
-      pendingLoginContext = { type: 'mp-join', code };
-      loginSubtitle.textContent = `Multiplayer-Spiel ${code} beitreten – wie heisst du?`;
-      usernameInput.value = playerName;
-      showScreen(loginScreen);
+      startMultiplayerRounds(code);
     }
   } else {
     showLandingScreen();

@@ -421,3 +421,82 @@ html, body {
   color: var(--amber);
   font-weight: 600;
 }
+
+/* --- Spielername / Profil --- */
+.landing-user {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.landing-user strong { color: var(--text); }
+
+.landing-user button {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--amber);
+  border-radius: 3px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.hint-tight { margin-top: -0.7rem; margin-bottom: 1.2rem; }
+
+.hint-note {
+  margin-top: -0.6rem;
+  margin-bottom: 1.2rem;
+  color: var(--teal);
+}
+
+.profile-subhead {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 1.6rem 0 0.6rem;
+}
+
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.profile-stat {
+  padding: 0.7rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.profile-stat .profile-stat-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.profile-stat .profile-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.profile-game {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.88rem;
+}
+
+.profile-game:last-child { border-bottom: none; }
+.profile-game .profile-game-score { color: var(--amber); font-weight: 600; }
+.profile-game .profile-game-rank { color: var(--text-muted); font-size: 0.8rem; }

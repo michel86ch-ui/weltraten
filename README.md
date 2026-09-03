@@ -122,7 +122,7 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
                        && request.resource.data.keys().hasOnly(['createdBy', 'createdAt', 'rounds'])
                        && request.resource.data.createdBy is string
                        && request.resource.data.createdBy.size() > 0
-                       && request.resource.data.createdBy.size() <= 20
+                       && request.resource.data.createdBy.size() <= 30
                        && request.resource.data.rounds is list
                        && request.resource.data.rounds.size() == 10;
          allow update, delete: if false;
@@ -132,12 +132,20 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
            allow create: if request.resource.data.keys().hasOnly(['name', 'score', 'ts'])
                          && request.resource.data.name is string
                          && request.resource.data.name.size() > 0
-                         && request.resource.data.name.size() <= 20
+                         && request.resource.data.name.size() <= 30
                          && request.resource.data.score is int
                          && request.resource.data.score >= 0
                          && request.resource.data.score <= 50000;
            allow update, delete: if false;
          }
+       }
+       match /players/{nameKey} {
+         allow read: if true;
+         allow create: if request.resource.data.keys().hasOnly(['displayName', 'createdAt'])
+                       && request.resource.data.displayName is string
+                       && request.resource.data.displayName.size() > 0
+                       && request.resource.data.displayName.size() <= 30;
+         allow update, delete: if false;
        }
        match /flags/{flagId} {
          allow read: if true;

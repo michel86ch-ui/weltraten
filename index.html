@@ -15,21 +15,37 @@
     <div class="login-card">
       <h1>Weltraten</h1>
       <p class="subtitle">Du landest irgendwo auf der Welt. Schau dich um und errate das Land.</p>
+      <div id="landing-user" class="landing-user"></div>
       <button id="landing-singleplayer-button" class="btn-primary">Singleplayer (5 Runden)</button>
       <button id="landing-multiplayer-button" class="btn-secondary">Multiplayer-Spiel erstellen (10 Runden)</button>
       <div id="landing-mp-list"></div>
     </div>
   </section>
 
-  <!-- NAMEN EINGEBEN: fuer Singleplayer, MP-Erstellung und MP-Beitritt -->
+  <!-- NAMEN WAEHLEN: einmalig beim ersten Besuch, spaeter ueber das Profil -->
   <section id="login-screen" class="screen hidden">
     <div class="login-card">
       <h1>Weltraten</h1>
-      <p id="login-subtitle" class="subtitle">Du landest irgendwo auf der Welt. Schau dich um und errate das Land.</p>
+      <p id="login-subtitle" class="subtitle">Wähle deinen Spielernamen – er wird für alle Ranglisten verwendet.</p>
       <label for="username-input">Dein Name</label>
-      <input id="username-input" type="text" maxlength="20" placeholder="z. B. Michel" autocomplete="off" />
-      <button id="start-button" class="btn-primary">Runde starten</button>
-      <p class="hint">Der Name wird nur lokal in diesem Browser gespeichert – kein Account, kein Passwort.</p>
+      <input id="username-input" type="text" maxlength="30" placeholder="z. B. michel.meier" autocomplete="off" />
+      <p class="hint hint-tight">Am besten <strong>vorname.nachname</strong> – gleiche Namen teilen sich dasselbe Profil.</p>
+      <p id="login-name-note" class="hint hint-note hidden"></p>
+      <button id="start-button" class="btn-primary">Weiter</button>
+      <p class="hint">Kein Konto, kein Passwort. Der Name identifiziert dich nur in den Ranglisten.</p>
+    </div>
+  </section>
+
+  <!-- PROFIL: Statistik ueber alle gespielten Runden -->
+  <section id="profile-screen" class="screen hidden">
+    <div class="result-card admin-card">
+      <h2>Profil</h2>
+      <p id="profile-name" class="mono-code"></p>
+      <div id="profile-stats"></div>
+      <h3 class="profile-subhead">Deine Spiele</h3>
+      <div id="profile-games"></div>
+      <button id="profile-back-button" class="btn-primary">Zur Übersicht</button>
+      <button id="profile-rename-button" class="btn-secondary">Namen ändern</button>
     </div>
   </section>
 
