@@ -199,6 +199,13 @@ function generateGameCode() {
   return code;
 }
 
+// Codes aus der URL kommen von aussen (manipulierbarer Link) und werden an
+// mehreren Stellen als Text angezeigt bzw. als localStorage-Key verwendet.
+// Nur unser eigenes, bekanntes Format zulassen, statt beliebigen Text.
+function isValidGameCode(code) {
+  return typeof code === 'string' && /^[A-Z0-9]{4,12}$/i.test(code);
+}
+
 // ---------------------------------------------------------------
 // Multiplayer-Speicher (nur lokal, kein Server): Fortschritt/
 // Ergebnisse pro Spielcode, Liste bekannter Spiele, Rangliste.
@@ -684,8 +691,8 @@ function showFinalScreen() {
     .join('<br>');
 
   finalSummary.innerHTML = isMultiplayer
-    ? `${playerName}, dein Ergebnis in Spiel ${currentGameCode}: <strong>${totalScore} Punkte</strong><br><br>${lines}`
-    : `${playerName}, dein Ergebnis: <strong>${totalScore} Punkte</strong><br><br>${lines}`;
+    ? `${escapeHtml(playerName)}, dein Ergebnis in Spiel ${escapeHtml(currentGameCode)}: <strong>${totalScore} Punkte</strong><br><br>${lines}`
+    : `${escapeHtml(playerName)}, dein Ergebnis: <strong>${totalScore} Punkte</strong><br><br>${lines}`;
 
   if (isMultiplayer) {
     completeMultiplayerGame(currentGameCode, totalScore);
@@ -774,7 +781,8 @@ async function boot() {
   await loadData();
 
   const params = new URLSearchParams(window.location.search);
-  const code = params.get('game');
+  const rawCode = params.get('game');
+  const code = isValidGameCode(rawCode) ? rawCode.toUpperCase() : null;
 
   if (code && params.has('lb')) {
     mergeLeaderboardFromParam(code, params.get('lb'));
