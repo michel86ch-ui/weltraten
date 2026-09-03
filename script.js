@@ -45,6 +45,7 @@ const inviteScreen = document.getElementById('invite-screen');
 const mpLockedScreen = document.getElementById('mp-locked-screen');
 const leaderboardScreen = document.getElementById('leaderboard-screen');
 const adminScreen = document.getElementById('admin-screen');
+const profileScreen = document.getElementById('profile-screen');
 
 const allScreens = [
   landingScreen, loginScreen, gameScreen, resultScreen, finalScreen,
@@ -66,7 +67,6 @@ const usernameInput = document.getElementById('username-input');
 const startButton = document.getElementById('start-button');
 const loginNameNote = document.getElementById('login-name-note');
 
-const profileScreen = document.getElementById('profile-screen');
 const profileName = document.getElementById('profile-name');
 const profileStats = document.getElementById('profile-stats');
 const profileGames = document.getElementById('profile-games');
