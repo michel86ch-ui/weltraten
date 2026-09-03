@@ -44,10 +44,11 @@ const finalScreen = document.getElementById('final-screen');
 const inviteScreen = document.getElementById('invite-screen');
 const mpLockedScreen = document.getElementById('mp-locked-screen');
 const leaderboardScreen = document.getElementById('leaderboard-screen');
+const adminScreen = document.getElementById('admin-screen');
 
 const allScreens = [
   landingScreen, loginScreen, gameScreen, resultScreen, finalScreen,
-  inviteScreen, mpLockedScreen, leaderboardScreen,
+  inviteScreen, mpLockedScreen, leaderboardScreen, adminScreen,
 ];
 
 function showScreen(screen) {
@@ -77,6 +78,10 @@ const leaderboardCodeLabel = document.getElementById('leaderboard-code');
 const leaderboardList = document.getElementById('leaderboard-list');
 const leaderboardShareButton = document.getElementById('leaderboard-share-button');
 const leaderboardBackButton = document.getElementById('leaderboard-back-button');
+
+const adminOutput = document.getElementById('admin-output');
+const adminCopyButton = document.getElementById('admin-copy-button');
+const adminBackButton = document.getElementById('admin-back-button');
 
 const guessForm = document.getElementById('guess-form');
 const guessSelect = document.getElementById('guess-select');
@@ -300,6 +305,69 @@ async function reportLocation(location, reason) {
     ts: firebase.firestore.FieldValue.serverTimestamp(),
   });
 }
+
+// ---------------------------------------------------------------
+// Admin-Auswertung der gemeldeten Bilder (nur ueber ?admin=flags
+// erreichbar, nicht verlinkt). Fasst alle Meldungen pro Ort
+// zusammen und stellt sie als kopierbaren Text dar.
+// ---------------------------------------------------------------
+async function showAdminFlagsScreen() {
+  showScreen(adminScreen);
+  adminOutput.value = 'Lade …';
+
+  try {
+    const snap = await db.collection('flags').get();
+    if (snap.empty) {
+      adminOutput.value = 'Keine Meldungen vorhanden.';
+      return;
+    }
+
+    const byLocation = new Map();
+    snap.forEach((doc) => {
+      const d = doc.data();
+      const key = d.locationId || '(unbekannt)';
+      if (!byLocation.has(key)) {
+        byLocation.set(key, {
+          locationId: key,
+          label: d.place || d.country || key,
+          too_easy: 0,
+          impossible: 0,
+        });
+      }
+      const entry = byLocation.get(key);
+      if (d.reason === 'too_easy') entry.too_easy += 1;
+      else if (d.reason === 'impossible') entry.impossible += 1;
+    });
+
+    const rows = [...byLocation.values()].sort(
+      (a, b) => b.too_easy + b.impossible - (a.too_easy + a.impossible)
+    );
+
+    adminOutput.value =
+      `${rows.length} gemeldete Orte, ${snap.size} Meldungen total\n\n` +
+      rows
+        .map(
+          (r) =>
+            `${r.locationId} | ${r.label} | zu einfach: ${r.too_easy} | unmöglich: ${r.impossible}`
+        )
+        .join('\n');
+  } catch (e) {
+    console.error('Meldungen konnten nicht geladen werden:', e);
+    adminOutput.value = 'Fehler beim Laden. Firestore-Regeln geprüft?';
+  }
+}
+
+adminCopyButton.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(adminOutput.value);
+    flashButtonFeedback(adminCopyButton, 'Kopiert!');
+  } catch {
+    adminOutput.focus();
+    adminOutput.select();
+  }
+});
+
+adminBackButton.addEventListener('click', goToLanding);
 
 // ---------------------------------------------------------------
 // Lokaler Zustand: Fortschritt/Sperre pro Spielcode auf diesem
@@ -881,6 +949,12 @@ async function boot() {
   await loadData();
 
   const params = new URLSearchParams(window.location.search);
+
+  if (params.get('admin') === 'flags') {
+    showAdminFlagsScreen();
+    return;
+  }
+
   const rawCode = params.get('game');
   const code = isValidGameCode(rawCode) ? rawCode.toUpperCase() : null;
 

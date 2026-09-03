@@ -67,6 +67,19 @@
     </div>
   </section>
 
+  <!-- ADMIN: nur ueber ?admin=flags aufrufbar, listet gemeldete Bilder als
+       kopierbaren Text zusammengefasst - kein Login, aber auch nicht
+       verlinkt, rein fuer den Betreiber gedacht -->
+  <section id="admin-screen" class="screen hidden">
+    <div class="result-card admin-card">
+      <h2>Gemeldete Bilder</h2>
+      <p class="hint">Nach Ort gruppiert, meist gemeldete zuerst. Text kopieren und in den Chat einfügen.</p>
+      <textarea id="admin-output" readonly></textarea>
+      <button id="admin-copy-button" class="btn-primary">Text kopieren</button>
+      <button id="admin-back-button" class="btn-secondary">Zur Übersicht</button>
+    </div>
+  </section>
+
   <!-- SPIEL -->
   <section id="game-screen" class="screen hidden">
     <div id="streetview"></div>
