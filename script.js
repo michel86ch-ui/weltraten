@@ -534,14 +534,31 @@ async function showLandingScreen() {
     return;
   }
 
+  // Wer schon gespielt hat, steht in Firestore - nicht nur im localStorage.
+  // Sonst gilt ein Spiel nach dem Leeren der Browserdaten oder auf einem
+  // anderen Geraet faelschlich wieder als offen.
+  const allEntries = await Promise.all(
+    games.map((g) => fetchLeaderboard(g.code).catch(() => []))
+  );
+
   const open = [];
   const completed = [];
-  games.forEach((g) => {
-    const info = getCompletedInfo(g.code);
-    if (info) {
-      completed.push({ ...g, score: info.score });
+  games.forEach((g, i) => {
+    const entries = allEntries[i];
+    const mine = playerName
+      ? entries.find((e) => normalize(String(e.name ?? '')) === normalize(playerName))
+      : null;
+    const local = getCompletedInfo(g.code);
+    const score = mine ? Number(mine.score) || 0 : local ? Number(local.score) || 0 : null;
+
+    if (score !== null) {
+      // Firestore ist die Wahrheit -> lokale Sperre wieder herstellen
+      if (mine && !local) {
+        localStorage.setItem(mpCompletedKey(g.code), JSON.stringify({ score, ts: Date.now() }));
+      }
+      completed.push({ ...g, score, players: entries.length });
     } else {
-      open.push(g);
+      open.push({ ...g, players: entries.length });
     }
   });
 
@@ -550,14 +567,27 @@ async function showLandingScreen() {
       g.createdBy || '?'
     )} · ${statusText}</span></div><button data-code="${escapeHtml(g.code)}" data-action="${dataAction}">${action}</button></div>`;
 
+  const playersLabel = (n) => (n === 1 ? '1 Ergebnis' : `${n} Ergebnisse`);
+
   let html = '<p class="mp-list-heading">Offene Spiele</p>';
   html += open.length
-    ? open.map((g) => renderEntry(g, 'noch offen', 'Spielen', 'play')).join('')
+    ? open
+        .map((g) =>
+          renderEntry(
+            g,
+            g.players ? `noch offen · ${playersLabel(g.players)}` : 'noch offen',
+            'Spielen',
+            'play'
+          )
+        )
+        .join('')
     : '<p class="mp-list-empty">Keine offenen Spiele.</p>';
 
   html += '<p class="mp-list-heading">Abgeschlossene Spiele</p>';
   html += completed.length
-    ? completed.map((g) => renderEntry(g, `${Number(g.score) || 0} Punkte`, 'Rangliste', 'lb')).join('')
+    ? completed
+        .map((g) => renderEntry(g, `${g.score} Punkte · ${playersLabel(g.players)}`, 'Rangliste', 'lb'))
+        .join('')
     : '<p class="mp-list-empty">Noch keine abgeschlossenen Spiele.</p>';
 
   landingMpList.innerHTML = html;
@@ -668,6 +698,22 @@ function startGame() {
 // Spielablauf: Multiplayer
 // ---------------------------------------------------------------
 async function startMultiplayerRounds(code) {
+  // Auch gegen Firestore pruefen, nicht nur gegen den localStorage: sonst
+  // koennte man nach dem Leeren der Browserdaten (oder auf einem zweiten
+  // Geraet) dasselbe Spiel ein zweites Mal spielen.
+  try {
+    const entries = await fetchLeaderboard(code);
+    const mine = entries.find((e) => normalize(String(e.name ?? '')) === normalize(playerName));
+    if (mine) {
+      const score = Number(mine.score) || 0;
+      localStorage.setItem(mpCompletedKey(code), JSON.stringify({ score, ts: Date.now() }));
+      showMpLockedScreen(code, { score });
+      return;
+    }
+  } catch (e) {
+    console.error('Konnte bestehendes Ergebnis nicht pruefen:', e);
+  }
+
   isMultiplayer = true;
   currentGameCode = code;
   roundsTotal = MP_ROUNDS;
@@ -995,7 +1041,7 @@ finalLandingButton.addEventListener('click', goToLanding);
 // ---------------------------------------------------------------
 function showMpLockedScreen(code, info) {
   currentGameCode = code;
-  mpLockedDetail.textContent = `Du hast Spiel ${code} auf diesem Gerät bereits gespielt: ${info.score} Punkte. Nochmal spielen geht nicht (sonst wäre die Rangliste unfair).`;
+  mpLockedDetail.textContent = `Du hast Spiel ${code} bereits gespielt: ${Number(info.score) || 0} Punkte. Nochmal spielen geht nicht (sonst wäre die Rangliste unfair).`;
   showScreen(mpLockedScreen);
 }
 
