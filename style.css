@@ -156,6 +156,23 @@ html, body {
 
 .mp-list-entry:last-child { border-bottom: none; }
 
+.mp-list-heading {
+  margin: 1.2rem 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+}
+
+.mp-list-heading:first-child { margin-top: 0; }
+
+.mp-list-empty {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 .mp-list-entry .mp-list-status {
   color: var(--text-muted);
   font-size: 0.82rem;

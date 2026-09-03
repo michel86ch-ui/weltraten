@@ -7,8 +7,6 @@ const MAX_POINTS = 5000;
 const SCORE_DECAY_KM = 2000;        // Länder-Runden: grosszügiger Massstab
 const SCORE_DECAY_KM_SWISS = 40;    // Schweiz-Runden: kleines Land, engerer Massstab
 
-const KNOWN_GAMES_KEY = 'weltraten_mp_known_games';
-
 // ---------------------------------------------------------------
 // Zustand
 // ---------------------------------------------------------------
@@ -220,6 +218,21 @@ function isValidGameCode(code) {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Wird beim Erstellen eines MP-Spiels geschrieben, damit die Startseite
+// spaeter ALLE existierenden Spiele auflisten kann - nicht nur die, deren
+// Link man selbst zugeschickt bekommen hat.
+async function createGameRecord(code, hostName) {
+  await db.collection('games').doc(code).set({
+    createdBy: hostName,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+async function fetchAllGames() {
+  const snap = await db.collection('games').orderBy('createdAt', 'desc').limit(50).get();
+  return snap.docs.map((d) => ({ code: d.id, ...d.data() }));
+}
+
 async function submitResult(code, name, score) {
   await db.collection('games').doc(code).collection('players').add({
     name,
@@ -267,27 +280,6 @@ function getCompletedInfo(code) {
   }
 }
 
-function rememberKnownGame(code) {
-  try {
-    const raw = localStorage.getItem(KNOWN_GAMES_KEY);
-    const list = raw ? JSON.parse(raw) : [];
-    const filtered = list.filter((c) => c !== code);
-    filtered.unshift(code);
-    localStorage.setItem(KNOWN_GAMES_KEY, JSON.stringify(filtered.slice(0, 30)));
-  } catch {
-    // localStorage evtl. nicht verfuegbar -> einfach ignorieren
-  }
-}
-
-function getKnownGames() {
-  try {
-    const raw = localStorage.getItem(KNOWN_GAMES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
 function buildInviteLink(code) {
   const url = new URL(window.location.href);
   url.search = '';
@@ -330,24 +322,46 @@ function flashButtonFeedback(buttonEl, message) {
 // ---------------------------------------------------------------
 // Startseite
 // ---------------------------------------------------------------
-function showLandingScreen() {
-  const known = getKnownGames();
-  if (known.length === 0) {
-    landingMpList.innerHTML = '';
-  } else {
-    landingMpList.innerHTML =
-      '<p class="mp-list-heading">Deine Multiplayer-Spiele</p>' +
-      known
-        .map((code) => {
-          const info = getCompletedInfo(code);
-          const statusText = info ? `gespielt: ${info.score} Punkte` : 'noch offen';
-          const action = info ? 'Rangliste' : 'Weiter';
-          const dataAction = info ? 'lb' : 'play';
-          return `<div class="mp-list-entry"><div><strong>${escapeHtml(code)}</strong><br><span class="mp-list-status">${statusText}</span></div><button data-code="${escapeHtml(code)}" data-action="${dataAction}">${action}</button></div>`;
-        })
-        .join('');
-  }
+async function showLandingScreen() {
   showScreen(landingScreen);
+  landingMpList.innerHTML = '<p class="mp-list-heading">Lade Spiele …</p>';
+
+  let games = [];
+  try {
+    games = await fetchAllGames();
+  } catch (e) {
+    console.error('Spiele-Liste konnte nicht geladen werden:', e);
+    landingMpList.innerHTML = '<p class="mp-list-empty">Spiele-Liste konnte nicht geladen werden.</p>';
+    return;
+  }
+
+  const open = [];
+  const completed = [];
+  games.forEach((g) => {
+    const info = getCompletedInfo(g.code);
+    if (info) {
+      completed.push({ ...g, score: info.score });
+    } else {
+      open.push(g);
+    }
+  });
+
+  const renderEntry = (g, statusText, action, dataAction) =>
+    `<div class="mp-list-entry"><div><strong>${escapeHtml(g.code)}</strong><br><span class="mp-list-status">von ${escapeHtml(
+      g.createdBy || '?'
+    )} · ${statusText}</span></div><button data-code="${escapeHtml(g.code)}" data-action="${dataAction}">${action}</button></div>`;
+
+  let html = '<p class="mp-list-heading">Offene Spiele</p>';
+  html += open.length
+    ? open.map((g) => renderEntry(g, 'noch offen', 'Spielen', 'play')).join('')
+    : '<p class="mp-list-empty">Keine offenen Spiele.</p>';
+
+  html += '<p class="mp-list-heading">Abgeschlossene Spiele</p>';
+  html += completed.length
+    ? completed.map((g) => renderEntry(g, `${g.score} Punkte`, 'Rangliste', 'lb')).join('')
+    : '<p class="mp-list-empty">Noch keine abgeschlossenen Spiele.</p>';
+
+  landingMpList.innerHTML = html;
 }
 
 landingMpList.addEventListener('click', (event) => {
@@ -397,10 +411,11 @@ startButton.addEventListener('click', () => {
   localStorage.setItem('weltraten_name', playerName);
 
   if (pendingLoginContext.type === 'mp-create') {
-    rememberKnownGame(pendingLoginContext.code);
+    createGameRecord(pendingLoginContext.code, playerName).catch((e) => {
+      console.error('Spiel-Eintrag konnte nicht angelegt werden:', e);
+    });
     showInviteScreen(pendingLoginContext.code);
   } else if (pendingLoginContext.type === 'mp-join') {
-    rememberKnownGame(pendingLoginContext.code);
     startMultiplayerRounds(pendingLoginContext.code);
   } else {
     startGame();
@@ -736,7 +751,6 @@ function showFinalScreen() {
 
 async function completeMultiplayerGame(code, score) {
   localStorage.setItem(mpCompletedKey(code), JSON.stringify({ score, ts: Date.now() }));
-  rememberKnownGame(code);
   try {
     await submitResult(code, playerName, score);
   } catch (e) {
@@ -834,7 +848,6 @@ async function boot() {
     if (info) {
       showMpLockedScreen(code, info);
     } else {
-      rememberKnownGame(code);
       pendingLoginContext = { type: 'mp-join', code };
       loginSubtitle.textContent = `Multiplayer-Spiel ${code} beitreten – wie heisst du?`;
       usernameInput.value = playerName;

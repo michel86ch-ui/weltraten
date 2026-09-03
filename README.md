@@ -81,14 +81,20 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
 - **Multiplayer (10 Runden):** Ein neues MP-Spiel bekommt einen zufälligen
   6-stelligen Code. Aus diesem Code wird deterministisch
   (`deterministicShuffle()`) dieselbe Liste von 10 Orten berechnet – jedes
-  Gerät, das den Einladungslink `?game=<code>` öffnet, zieht exakt dieselben
-  Orte, ganz ohne dass die Orte selbst irgendwo gespeichert werden müssen.
+  Gerät, das den Code kennt, zieht exakt dieselben Orte, ganz ohne dass die
+  Orte selbst irgendwo gespeichert werden müssen.
   Nach den 10 Runden wird das Spiel für dieses Gerät lokal gesperrt (kein
   Neuspielen für einen besseren Score, per `localStorage`).
+  **Spiele auffindbar ohne Link:** Beim Erstellen wird zusätzlich ein
+  Dokument `games/{code}` mit Ersteller und Zeitstempel angelegt. Die
+  Startseite lädt darüber **alle** existierenden Spiele (`fetchAllGames()`)
+  und zeigt sie in zwei Abschnitten – offene oben, abgeschlossene unten,
+  beides scrollbar. Der Einladungslink bleibt als Abkürzung nutzbar, ist
+  aber nicht mehr zwingend nötig, um ein Spiel zu finden.
   **Rangliste über Firebase/Firestore:** Das Ergebnis (Name + Punktzahl)
-  wird nach Abschluss in eine Firestore-Datenbank geschrieben
-  (`games/{code}/players/{autoId}`), die Rangliste liest von dort – echt
-  gemeinsam für alle Spieler, nicht nur "was dieses Gerät zufällig mitbekam".
+  wird nach Abschluss in dieselbe Datenbank geschrieben
+  (`games/{code}/players/{autoId}`), die Rangliste liest live von dort –
+  echt gemeinsam für alle Spieler.
   Setup-Anleitung dafür: Abschnitt "4. Firebase einrichten" unten.
 
 ## 4. Firebase einrichten (für die Multiplayer-Rangliste)
@@ -110,17 +116,26 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
-       match /games/{gameCode}/players/{playerId} {
+       match /games/{gameCode} {
          allow read: if true;
          allow create: if gameCode.matches('^[A-Za-z0-9]{4,12}$')
-                       && request.resource.data.keys().hasOnly(['name', 'score', 'ts'])
-                       && request.resource.data.name is string
-                       && request.resource.data.name.size() > 0
-                       && request.resource.data.name.size() <= 20
-                       && request.resource.data.score is int
-                       && request.resource.data.score >= 0
-                       && request.resource.data.score <= 50000;
+                       && request.resource.data.keys().hasOnly(['createdBy', 'createdAt'])
+                       && request.resource.data.createdBy is string
+                       && request.resource.data.createdBy.size() > 0
+                       && request.resource.data.createdBy.size() <= 20;
          allow update, delete: if false;
+
+         match /players/{playerId} {
+           allow read: if true;
+           allow create: if request.resource.data.keys().hasOnly(['name', 'score', 'ts'])
+                         && request.resource.data.name is string
+                         && request.resource.data.name.size() > 0
+                         && request.resource.data.name.size() <= 20
+                         && request.resource.data.score is int
+                         && request.resource.data.score >= 0
+                         && request.resource.data.score <= 50000;
+           allow update, delete: if false;
+         }
        }
        match /flags/{flagId} {
          allow read: if true;
@@ -136,11 +151,12 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
    }
    ```
 
-   Das erlaubt jedem, Ergebnisse und Meldungen zu lesen und **einmal**
-   anzulegen (Name ≤ 20 Zeichen, Score zwischen 0 und 50'000 = 10 Runden ×
-   5000 Punkte, Meldegrund nur "too_easy" oder "impossible"), aber nichts
-   nachträglich zu ändern oder zu löschen. Alles ausserhalb dieser beiden
-   Pfade ist komplett gesperrt.
+   Neu dabei: `games/{gameCode}` selbst (wer hat's erstellt, wann) – braucht
+   es für die Startseite, die jetzt **alle** existierenden Spiele auflistet,
+   nicht nur die auf dem eigenen Gerät bekannten. Rest wie gehabt: jeder darf
+   lesen und **einmal** plausible Daten anlegen (Name ≤ 20 Zeichen, Score
+   0–50'000, Meldegrund nur "too_easy"/"impossible"), nichts nachträglich
+   ändern oder löschen. Alles ausserhalb dieser Pfade ist komplett gesperrt.
 
    **"Bild melden"-Funktion:** Im Spiel gibt's oben rechts einen Button
    "⚑ Bild melden" (nur während einer laufenden Runde sichtbar). Meldungen
