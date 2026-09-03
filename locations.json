@@ -1513,5 +1513,26 @@
     "lng": 9.842,
     "country": "Schweiz",
     "place": "St. Moritz"
+  },
+  {
+    "id": "ch-diessbach",
+    "lat": 47.10797,
+    "lng": 7.361967,
+    "country": "Schweiz",
+    "place": "Diessbach bei Büren"
+  },
+  {
+    "id": "ch-diessbach2",
+    "lat": 47.102571,
+    "lng": 7.372719,
+    "country": "Schweiz",
+    "place": "Diessbach bei Büren"
+  },
+  {
+    "id": "ch-diessbach3",
+    "lat": 47.108318,
+    "lng": 7.365421,
+    "country": "Schweiz",
+    "place": "Diessbach bei Büren"
   }
 ]
