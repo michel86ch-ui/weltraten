@@ -314,6 +314,15 @@ html, body {
 
 .admin-entry:last-child { border-bottom: none; }
 
+.admin-entry-done { opacity: 0.45; }
+
+.admin-done-tag {
+  flex-shrink: 0;
+  color: var(--teal);
+  font-size: 1rem;
+  padding: 0 0.5rem;
+}
+
 .admin-entry .admin-entry-status {
   color: var(--text-muted);
   font-size: 0.78rem;

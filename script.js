@@ -159,10 +159,17 @@ function normalize(name) {
   return name.trim().toLowerCase();
 }
 
+// Escaped auch Anfuehrungszeichen - noetig, weil escapeHtml() teils in
+// HTML-Attributen verwendet wird (data-id, data-code). Ein reines
+// textContent/innerHTML-Escaping laesst " und ' stehen und erlaubt damit
+// Attribut-Injection wie: x" onmouseover="...
 function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ---------------------------------------------------------------
@@ -371,7 +378,10 @@ async function showAdminFlagsScreen() {
     const byLocation = new Map();
     flagsSnap.forEach((doc) => {
       const d = doc.data();
-      const key = d.locationId || '(unbekannt)';
+      // locationId wird von den Firestore-Regeln nur als String geprueft,
+      // nicht auf Format - hier gegen unser eigenes Schema absichern.
+      const raw = typeof d.locationId === 'string' ? d.locationId : '';
+      const key = /^[a-z0-9-]{2,40}$/i.test(raw) ? raw : '(ungültig)';
       if (!byLocation.has(key)) {
         byLocation.set(key, {
           locationId: key,
@@ -389,22 +399,28 @@ async function showAdminFlagsScreen() {
       (a, b) => b.too_easy + b.impossible - (a.too_easy + a.impossible)
     );
     const active = all.filter((r) => !resolvedIds.has(r.locationId));
-    const resolvedCount = all.length - active.length;
+    const done = all.filter((r) => resolvedIds.has(r.locationId));
 
-    if (active.length === 0) {
-      adminList.innerHTML = '<p class="mp-list-empty">Keine offenen Meldungen.</p>';
-    } else {
-      adminList.innerHTML = active
-        .map(
-          (r) =>
-            `<div class="admin-entry"><div><strong>${escapeHtml(r.locationId)}</strong> – ${escapeHtml(
-              r.label
-            )}<br><span class="admin-entry-status">zu einfach: ${r.too_easy} · unmöglich: ${
-              r.impossible
-            }</span></div><button data-id="${escapeHtml(r.locationId)}">Erledigt</button></div>`
-        )
-        .join('');
+    const renderRow = (r, withButton) =>
+      `<div class="admin-entry${withButton ? '' : ' admin-entry-done'}"><div><strong>${escapeHtml(
+        r.locationId
+      )}</strong> – ${escapeHtml(r.label)}<br><span class="admin-entry-status">zu einfach: ${
+        r.too_easy
+      } · unmöglich: ${r.impossible}</span></div>${
+        withButton ? `<button data-id="${escapeHtml(r.locationId)}">Erledigt</button>` : '<span class="admin-done-tag">✓</span>'
+      }</div>`;
+
+    let html = '<p class="mp-list-heading">Neu / offen</p>';
+    html += active.length
+      ? active.map((r) => renderRow(r, true)).join('')
+      : '<p class="mp-list-empty">Keine offenen Meldungen.</p>';
+
+    if (done.length) {
+      html += '<p class="mp-list-heading">Bereits erledigt</p>';
+      html += done.map((r) => renderRow(r, false)).join('');
     }
+
+    adminList.innerHTML = html;
 
     adminOutput.value = active.length
       ? active
@@ -414,10 +430,6 @@ async function showAdminFlagsScreen() {
           )
           .join('\n')
       : '';
-
-    if (resolvedCount > 0) {
-      adminList.innerHTML += `<p class="mp-list-heading">${resolvedCount} bereits erledigt (ausgeblendet)</p>`;
-    }
   } catch (e) {
     console.error('Meldungen konnten nicht geladen werden:', e);
     adminList.innerHTML = '<p class="mp-list-empty">Fehler beim Laden. Firestore-Regeln geprüft?</p>';
