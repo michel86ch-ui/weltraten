@@ -204,19 +204,49 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
 
 ## Bekannte Einschränkungen / nächste Schritte
 
-- Insgesamt 115 Standorte hinterlegt (55 Länder-Runden + 60 Schweizer
+- 240 Standorte hinterlegt (165 Länder-Runden über 55 Länder + 75 Schweizer
   Städte/Dörfer für den Schweiz-Modus) und ~58 Länder-Zentroide
-  (`locations.json`, `country-centroids.json`) – für noch mehr Abwechslung
-  lohnt sich eine weitere Erweiterung. Jeder Eintrag in `locations.json`
-  braucht eine eindeutige `id`, damit das Anti-Wiederholungssystem (siehe
-  unten) funktioniert; Schweizer Orte zusätzlich ein `place`-Feld. Die
-  Zentroid-Koordinaten sind grobe Näherungswerte; für faireres Scoring lohnt
-  sich ein Ersatz durch einen geprüften offenen Datensatz mit echten
-  Länder-Centroiden.
-- Kein globales Leaderboard: Punkte gelten nur für die laufende
-  Browser-Session. Für ein öffentliches Ranking bräuchte es ein simples
-  Backend (z. B. Firebase Firestore oder Supabase mit anonymem Zugriff) –
-  bewusst weggelassen, um ohne Account/Server auszukommen.
-- Der API-Key ist im Client-Code sichtbar. Für höheren Schutz später einen
-  kleinen Proxy (z. B. Cloudflare Worker) vorschalten, der den Key serverseitig
-  hält.
+  (`locations.json`, `country-centroids.json`). Jeder Eintrag braucht eine
+  eindeutige `id`, damit Anti-Wiederholung und Meldefunktion funktionieren;
+  Schweizer Orte zusätzlich ein `place`-Feld. Die Zentroid-Koordinaten sind
+  grobe Näherungswerte; für faireres Scoring lohnt sich ein Ersatz durch
+  einen geprüften offenen Datensatz mit echten Länder-Centroiden.
+
+## Sicherheit
+
+Was abgesichert ist:
+
+- **XSS:** Alle Daten aus Firestore und aus Nutzereingaben werden beim
+  Rendern escaped (`escapeHtml()`), Zahlen zusätzlich per `Number()`
+  erzwungen. Runden-Daten aus `games/{code}.rounds` durchlaufen
+  `sanitizeRound()`: Koordinaten müssen gültige Zahlen im Bereich
+  ±90/±180 sein, Land und Ort müssen in unseren eigenen Datensätzen
+  (`country-centroids.json` bzw. den `place`-Feldern) existieren.
+  Ungültige Einträge werden deterministisch ersetzt statt angezeigt.
+  Das ist nötig, weil Firestore-Regeln den **Inhalt** einer Liste nicht
+  prüfen können – die Validierung muss im Client passieren.
+- **Spielcodes aus der URL** werden gegen `^[A-Z0-9]{4,12}$` geprüft,
+  bevor sie irgendwo verwendet werden.
+- **Firestore-Regeln:** nur `create`, nie `update`/`delete`; alles
+  ausserhalb der definierten Pfade komplett gesperrt.
+- **Google Maps API-Key:** per HTTP-Referrer auf die GitHub-Pages-Domain
+  beschränkt. Der Firebase-`apiKey` ist bei Web-Apps bewusst öffentlich –
+  die Absicherung erfolgt über die Firestore-Regeln, nicht über
+  Geheimhaltung.
+
+Bewusst offene Punkte (Abwägung Aufwand vs. Risiko für ein privates
+Freundeskreis-Projekt):
+
+- **Punkte sind selbst gemeldet.** Wer die Browser-Konsole bedienen kann,
+  schreibt sich direkt bis zu 50'000 Punkte in die Rangliste. Ohne
+  serverseitige Rundenauswertung (Cloud Function) nicht zu verhindern.
+- **Die Einmal-Sperre pro Spiel liegt im `localStorage`** und lässt sich
+  durch Löschen der Browserdaten umgehen.
+- **`?admin=flags` hat keinen Login.** Wer die URL kennt, sieht die
+  Meldungen und kann sie als erledigt markieren. Kein Datenleck (es stehen
+  nur Ortsnamen drin), aber jemand könnte Meldungen ausblenden.
+- **Kein App Check / Rate Limiting.** Spiele, Meldungen und
+  Ranglisteneinträge lassen sich massenhaft anlegen. Kostenrisiko ist
+  null (Spark-Tarif ohne Zahlungsmittel – bei Kontingentende wird
+  abgelehnt, nicht abgerechnet), aber die Übersichtsseite liesse sich
+  zumüllen. Gegenmittel wäre Firebase App Check mit reCAPTCHA.

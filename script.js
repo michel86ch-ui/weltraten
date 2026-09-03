@@ -251,16 +251,53 @@ async function createGameRecord(code, hostName) {
 // davon, was seither an locations.json geaendert wurde. Faellt fuer sehr
 // alte Spiele (vor diesem Update erstellt, nur locationIds statt rounds
 // gespeichert) auf die ID-basierte bzw. Live-Berechnung zurueck.
+// Prueft einen einzelnen Runden-Eintrag aus Firestore. Das Dokument
+// games/{code} kann von jedem angelegt werden und die Firestore-Regeln
+// koennen den Inhalt einer Liste nicht pruefen - die Validierung MUSS
+// also hier passieren. Land/Ort werden gegen unsere eigenen Datensaetze
+// abgeglichen (Allowlist), Koordinaten auf gueltige Bereiche geprueft.
+function sanitizeRound(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+
+  const lat = Number(entry.lat);
+  const lng = Number(entry.lng);
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) return null;
+  if (!Number.isFinite(lng) || lng < -180 || lng > 180) return null;
+
+  // Nur Laender, die wir selbst kennen - verhindert eingeschleuste Strings.
+  if (typeof entry.country !== 'string' || !(entry.country in centroids)) return null;
+
+  let place = null;
+  if (entry.place != null) {
+    if (typeof entry.place !== 'string' || !(entry.place in swissPlaceCoords)) return null;
+    place = entry.place;
+  }
+
+  return {
+    id: typeof entry.id === 'string' ? entry.id : '',
+    lat,
+    lng,
+    country: entry.country,
+    place,
+  };
+}
+
 async function resolveRoundLocations(code) {
   try {
     const doc = await db.collection('games').doc(code).get();
     const data = doc.data();
     if (data && Array.isArray(data.rounds) && data.rounds.length === MP_ROUNDS) {
-      return data.rounds;
+      // Ungueltige/manipulierte Eintraege werden deterministisch ersetzt,
+      // damit alle Spieler trotzdem dasselbe sehen.
+      return data.rounds.map(
+        (entry, index) =>
+          sanitizeRound(entry) ||
+          deterministicShuffle(locations, `${code}-invalid-${index}`)[0]
+      );
     }
     if (data && Array.isArray(data.locationIds) && data.locationIds.length === MP_ROUNDS) {
       return data.locationIds.map((id, index) => {
-        const found = locations.find((l) => l.id === id);
+        const found = typeof id === 'string' ? locations.find((l) => l.id === id) : null;
         return found || deterministicShuffle(locations, `${code}-missing-${index}`)[0];
       });
     }
@@ -508,7 +545,7 @@ async function showLandingScreen() {
 
   html += '<p class="mp-list-heading">Abgeschlossene Spiele</p>';
   html += completed.length
-    ? completed.map((g) => renderEntry(g, `${g.score} Punkte`, 'Rangliste', 'lb')).join('')
+    ? completed.map((g) => renderEntry(g, `${Number(g.score) || 0} Punkte`, 'Rangliste', 'lb')).join('')
     : '<p class="mp-list-empty">Noch keine abgeschlossenen Spiele.</p>';
 
   landingMpList.innerHTML = html;
@@ -882,7 +919,7 @@ nextRoundButton.addEventListener('click', () => {
 // ---------------------------------------------------------------
 function showFinalScreen() {
   const lines = roundResults
-    .map((r, i) => `Runde ${i + 1}: ${r.actual} – ${r.points} Punkte`)
+    .map((r, i) => `Runde ${i + 1}: ${escapeHtml(r.actual)} – ${Number(r.points)} Punkte`)
     .join('<br>');
 
   finalSummary.innerHTML = isMultiplayer
@@ -968,7 +1005,7 @@ async function showLeaderboardScreen(code) {
     const entries = await fetchLeaderboard(code);
     leaderboardList.innerHTML = entries.length
       ? entries
-          .map((e) => `<li><span>${escapeHtml(e.name)}</span><span class="lb-score">${e.score} Punkte</span></li>`)
+          .map((e) => `<li><span>${escapeHtml(String(e.name ?? '?'))}</span><span class="lb-score">${Number(e.score) || 0} Punkte</span></li>`)
           .join('')
       : '<li>Noch keine Ergebnisse.</li>';
   } catch (e) {
