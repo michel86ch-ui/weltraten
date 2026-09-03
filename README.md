@@ -78,22 +78,77 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
   nicht alle anderen einmal gezeigt wurden. Der Fortschritt wird in
   `localStorage` gespeichert und bleibt so auch über mehrere Spiele/Browser-
   Sessions hinweg erhalten.
-- **Multiplayer (10 Runden), ohne eigenen Server:** Ein neues MP-Spiel
-  bekommt einen zufälligen 6-stelligen Code. Aus diesem Code wird
-  deterministisch (`deterministicShuffle()`) dieselbe Liste von 10 Orten
-  berechnet – jedes Gerät, das den Einladungslink `?game=<code>` öffnet,
-  zieht exakt dieselben Orte, ganz ohne gemeinsame Datenbank. Nach den 10
-  Runden wird das Ergebnis lokal gespeichert und das Spiel für dieses Gerät
-  gesperrt (kein Neuspielen für einen besseren Score).
-  **Rangliste ohne Backend:** Da nichts zentral gespeichert wird, kennt jedes
-  Gerät nur die Ergebnisse, die es selbst gespielt oder über einen geteilten
-  Link gesehen hat. Der "Ergebnis-Link teilen"-Button hängt deshalb die
-  komplette, auf diesem Gerät bekannte Rangliste kodiert an den Link an
-  (`buildResultShareLink()`); wer den Link öffnet, übernimmt diese Einträge
-  automatisch in seine eigene lokale Rangliste (`mergeLeaderboardFromParam()`).
-  Kursiert der Link ein paar Mal in der Gruppe, gleichen sich die Ranglisten
-  so an – aber ohne Garantie auf Vollständigkeit, wenn nicht alle ihr
-  Ergebnis zurückteilen.
+- **Multiplayer (10 Runden):** Ein neues MP-Spiel bekommt einen zufälligen
+  6-stelligen Code. Aus diesem Code wird deterministisch
+  (`deterministicShuffle()`) dieselbe Liste von 10 Orten berechnet – jedes
+  Gerät, das den Einladungslink `?game=<code>` öffnet, zieht exakt dieselben
+  Orte, ganz ohne dass die Orte selbst irgendwo gespeichert werden müssen.
+  Nach den 10 Runden wird das Spiel für dieses Gerät lokal gesperrt (kein
+  Neuspielen für einen besseren Score, per `localStorage`).
+  **Rangliste über Firebase/Firestore:** Das Ergebnis (Name + Punktzahl)
+  wird nach Abschluss in eine Firestore-Datenbank geschrieben
+  (`games/{code}/players/{autoId}`), die Rangliste liest von dort – echt
+  gemeinsam für alle Spieler, nicht nur "was dieses Gerät zufällig mitbekam".
+  Setup-Anleitung dafür: Abschnitt "4. Firebase einrichten" unten.
+
+## 4. Firebase einrichten (für die Multiplayer-Rangliste)
+
+1. In der [Firebase-Konsole](https://console.firebase.google.com) das
+   bestehende Google-Cloud-Projekt (dasselbe wie für die Maps API) als
+   Firebase-Projekt hinzufügen, Analytics kann deaktiviert bleiben.
+2. **Firestore Database** aktivieren (Menü → Datenbanken und Speicher →
+   Firestore), Region z. B. `europe-west6` (Zürich), im **Testmodus**
+   starten.
+3. Web-App registrieren (Projektübersicht → App hinzufügen → `</>`-Symbol),
+   Firebase Hosting dabei **nicht** aktivieren (wir bleiben bei GitHub
+   Pages). Die angezeigte `firebaseConfig` in `firebase-config.js` eintragen.
+4. **Sicherheitsregeln setzen** (Firestore → Regeln-Tab), damit nach den
+   30 Tagen Testmodus nicht plötzlich alles gesperrt ist bzw. damit von
+   Anfang an nur sinnvolle Daten reinkommen:
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /games/{gameCode}/players/{playerId} {
+         allow read: if true;
+         allow create: if gameCode.matches('^[A-Za-z0-9]{4,12}$')
+                       && request.resource.data.keys().hasOnly(['name', 'score', 'ts'])
+                       && request.resource.data.name is string
+                       && request.resource.data.name.size() > 0
+                       && request.resource.data.name.size() <= 20
+                       && request.resource.data.score is int
+                       && request.resource.data.score >= 0
+                       && request.resource.data.score <= 50000;
+         allow update, delete: if false;
+       }
+       match /flags/{flagId} {
+         allow read: if true;
+         allow create: if request.resource.data.keys().hasOnly(['locationId', 'country', 'place', 'reason', 'ts'])
+                       && request.resource.data.locationId is string
+                       && request.resource.data.reason in ['too_easy', 'impossible'];
+         allow update, delete: if false;
+       }
+       match /{document=**} {
+         allow read, write: if false;
+       }
+     }
+   }
+   ```
+
+   Das erlaubt jedem, Ergebnisse und Meldungen zu lesen und **einmal**
+   anzulegen (Name ≤ 20 Zeichen, Score zwischen 0 und 50'000 = 10 Runden ×
+   5000 Punkte, Meldegrund nur "too_easy" oder "impossible"), aber nichts
+   nachträglich zu ändern oder zu löschen. Alles ausserhalb dieser beiden
+   Pfade ist komplett gesperrt.
+
+   **"Bild melden"-Funktion:** Im Spiel gibt's oben rechts einen Button
+   "⚑ Bild melden" (nur während einer laufenden Runde sichtbar). Meldungen
+   landen in der Sammlung `flags` (Firestore → Daten → `flags`) mit
+   Orts-ID, Land/Ort und Grund ("zu einfach" / "unmöglich") – dort
+   regelmässig reinschauen und auffällige Orte in `locations.json` ersetzen.
+
+
 
 ## Bekannte Einschränkungen / nächste Schritte
 

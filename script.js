@@ -85,6 +85,12 @@ const guessSelect = document.getElementById('guess-select');
 const guessSubmit = document.getElementById('guess-submit');
 const panoLoading = document.getElementById('pano-loading');
 
+const reportButton = document.getElementById('report-button');
+const reportModal = document.getElementById('report-modal');
+const reportTooEasyButton = document.getElementById('report-too-easy');
+const reportImpossibleButton = document.getElementById('report-impossible');
+const reportCancelButton = document.getElementById('report-cancel');
+
 const hudPlayer = document.getElementById('hud-player');
 const hudRound = document.getElementById('hud-round');
 const hudScore = document.getElementById('hud-score');
@@ -207,11 +213,50 @@ function isValidGameCode(code) {
 }
 
 // ---------------------------------------------------------------
-// Multiplayer-Speicher (nur lokal, kein Server): Fortschritt/
-// Ergebnisse pro Spielcode, Liste bekannter Spiele, Rangliste.
+// Firebase/Firestore: gemeinsame Rangliste. games/{code}/players/{autoId}
+// mit {name, score, ts}. Regeln in der Firebase-Konsole erlauben nur
+// lesen + einmal anlegen (kein Ueberschreiben) - siehe README.
+// ---------------------------------------------------------------
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+async function submitResult(code, name, score) {
+  await db.collection('games').doc(code).collection('players').add({
+    name,
+    score,
+    ts: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+async function fetchLeaderboard(code) {
+  const snap = await db
+    .collection('games')
+    .doc(code)
+    .collection('players')
+    .orderBy('score', 'desc')
+    .limit(50)
+    .get();
+  return snap.docs.map((d) => d.data());
+}
+
+// "Bild melden": Panoramen als zu einfach oder unmoeglich markieren, damit
+// sie sich spaeter in der Firestore-Konsole (Sammlung "flags") gezielt
+// nachschauen und aus locations.json ersetzen lassen.
+async function reportLocation(location, reason) {
+  await db.collection('flags').add({
+    locationId: location.id,
+    country: location.country,
+    place: location.place || null,
+    reason, // 'too_easy' | 'impossible'
+    ts: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+// ---------------------------------------------------------------
+// Lokaler Zustand: Fortschritt/Sperre pro Spielcode auf diesem
+// Geraet, plus Liste bekannter Spiele fuer die Startseite.
 // ---------------------------------------------------------------
 function mpCompletedKey(code) { return `weltraten_mp_completed:${code}`; }
-function mpLeaderboardKey(code) { return `weltraten_mp_lb:${code}`; }
 
 function getCompletedInfo(code) {
   try {
@@ -243,58 +288,10 @@ function getKnownGames() {
   }
 }
 
-function getLeaderboard(code) {
-  try {
-    const raw = localStorage.getItem(mpLeaderboardKey(code));
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function mergeLeaderboardEntries(code, entries) {
-  const current = getLeaderboard(code);
-  const byName = new Map(current.map((e) => [normalize(e.name), e]));
-  entries.forEach((e) => {
-    if (!e || typeof e.name !== 'string' || typeof e.score !== 'number') return;
-    const key = normalize(e.name);
-    const existing = byName.get(key);
-    if (!existing || e.score > existing.score) {
-      byName.set(key, { name: e.name, score: e.score });
-    }
-  });
-  const merged = [...byName.values()].sort((a, b) => b.score - a.score);
-  localStorage.setItem(mpLeaderboardKey(code), JSON.stringify(merged));
-  return merged;
-}
-
-function encodeLeaderboardParam(code) {
-  const json = JSON.stringify(getLeaderboard(code));
-  return btoa(unescape(encodeURIComponent(json)));
-}
-
-function mergeLeaderboardFromParam(code, encoded) {
-  try {
-    const json = decodeURIComponent(escape(atob(encoded)));
-    const entries = JSON.parse(json);
-    if (Array.isArray(entries)) mergeLeaderboardEntries(code, entries);
-  } catch {
-    // kaputter/manipulierter Link-Parameter -> einfach ignorieren
-  }
-}
-
 function buildInviteLink(code) {
   const url = new URL(window.location.href);
   url.search = '';
   url.searchParams.set('game', code);
-  return url.toString();
-}
-
-function buildResultShareLink(code) {
-  const url = new URL(window.location.href);
-  url.search = '';
-  url.searchParams.set('game', code);
-  url.searchParams.set('lb', encodeLeaderboardParam(code));
   return url.toString();
 }
 
@@ -609,6 +606,34 @@ function finishPanoramaLoad() {
 }
 
 // ---------------------------------------------------------------
+// "Bild melden"-Popup
+// ---------------------------------------------------------------
+reportButton.addEventListener('click', () => {
+  reportModal.classList.remove('hidden');
+});
+
+reportCancelButton.addEventListener('click', () => {
+  reportModal.classList.add('hidden');
+});
+
+async function handleReportClick(reason) {
+  reportTooEasyButton.disabled = true;
+  reportImpossibleButton.disabled = true;
+  try {
+    await reportLocation(roundPool[currentRoundIndex], reason);
+  } catch (e) {
+    console.error('Meldung fehlgeschlagen:', e);
+  }
+  reportTooEasyButton.disabled = false;
+  reportImpossibleButton.disabled = false;
+  reportModal.classList.add('hidden');
+  flashButtonFeedback(reportButton, 'Gemeldet ✓');
+}
+
+reportTooEasyButton.addEventListener('click', () => handleReportClick('too_easy'));
+reportImpossibleButton.addEventListener('click', () => handleReportClick('impossible'));
+
+// ---------------------------------------------------------------
 // Raten & Scoring
 // ---------------------------------------------------------------
 guessForm.addEventListener('submit', (event) => {
@@ -709,10 +734,23 @@ function showFinalScreen() {
   showScreen(finalScreen);
 }
 
-function completeMultiplayerGame(code, score) {
-  mergeLeaderboardEntries(code, [{ name: playerName, score }]);
+async function completeMultiplayerGame(code, score) {
   localStorage.setItem(mpCompletedKey(code), JSON.stringify({ score, ts: Date.now() }));
   rememberKnownGame(code);
+  try {
+    await submitResult(code, playerName, score);
+  } catch (e) {
+    console.error('Ergebnis konnte nicht in die Rangliste geschrieben werden:', e);
+    resultDetailNote('Ergebnis lokal gespeichert, aber Übertragung an die Rangliste ist fehlgeschlagen.');
+  }
+}
+
+function resultDetailNote(msg) {
+  // Kleiner, nicht-blockierender Hinweis unter dem Endstand
+  const note = document.createElement('p');
+  note.className = 'hint';
+  note.textContent = msg;
+  finalSummary.after(note);
 }
 
 playAgainButton.addEventListener('click', () => {
@@ -721,8 +759,8 @@ playAgainButton.addEventListener('click', () => {
 
 finalShareButton.addEventListener('click', () => {
   shareLink(
-    buildResultShareLink(currentGameCode),
-    `Mein Weltraten-Ergebnis: ${totalScore} Punkte (Spiel ${currentGameCode})`,
+    buildInviteLink(currentGameCode),
+    `Weltraten – Spiel ${currentGameCode} (mein Ergebnis: ${totalScore} Punkte)`,
     finalShareButton
   );
 });
@@ -751,22 +789,29 @@ mpLockedBackButton.addEventListener('click', goToLanding);
 // ---------------------------------------------------------------
 // Rangliste
 // ---------------------------------------------------------------
-function showLeaderboardScreen(code) {
+async function showLeaderboardScreen(code) {
   currentLeaderboardCode = code;
   leaderboardCodeLabel.textContent = code;
-  const entries = getLeaderboard(code);
-  leaderboardList.innerHTML = entries.length
-    ? entries
-        .map((e) => `<li><span>${escapeHtml(e.name)}</span><span class="lb-score">${e.score} Punkte</span></li>`)
-        .join('')
-    : '<li>Noch keine Ergebnisse bekannt.</li>';
+  leaderboardList.innerHTML = '<li>Lade Rangliste …</li>';
   showScreen(leaderboardScreen);
+
+  try {
+    const entries = await fetchLeaderboard(code);
+    leaderboardList.innerHTML = entries.length
+      ? entries
+          .map((e) => `<li><span>${escapeHtml(e.name)}</span><span class="lb-score">${e.score} Punkte</span></li>`)
+          .join('')
+      : '<li>Noch keine Ergebnisse.</li>';
+  } catch (e) {
+    console.error('Rangliste konnte nicht geladen werden:', e);
+    leaderboardList.innerHTML = '<li>Rangliste konnte nicht geladen werden.</li>';
+  }
 }
 
 leaderboardShareButton.addEventListener('click', () => {
   shareLink(
-    buildResultShareLink(currentLeaderboardCode),
-    `Weltraten-Rangliste – Spiel ${currentLeaderboardCode}`,
+    buildInviteLink(currentLeaderboardCode),
+    `Weltraten – Spiel ${currentLeaderboardCode}`,
     leaderboardShareButton
   );
 });
@@ -783,10 +828,6 @@ async function boot() {
   const params = new URLSearchParams(window.location.search);
   const rawCode = params.get('game');
   const code = isValidGameCode(rawCode) ? rawCode.toUpperCase() : null;
-
-  if (code && params.has('lb')) {
-    mergeLeaderboardFromParam(code, params.get('lb'));
-  }
 
   if (code) {
     const info = getCompletedInfo(code);

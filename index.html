@@ -61,7 +61,7 @@
     <div class="result-card">
       <h2>Rangliste – Spiel <span id="leaderboard-code"></span></h2>
       <ol id="leaderboard-list"></ol>
-      <p class="hint">Basiert nur auf Ergebnis-Links, die auf diesem Gerät geöffnet wurden – evtl. unvollständig, wenn nicht alle ihr Ergebnis geteilt haben.</p>
+      <p class="hint">Zeigt alle Ergebnisse, die für dieses Spiel eingereicht wurden.</p>
       <button id="leaderboard-share-button" class="btn-primary">Ergebnis-Link teilen</button>
       <button id="leaderboard-back-button" class="btn-secondary">Zur Übersicht</button>
     </div>
@@ -71,6 +71,7 @@
   <section id="game-screen" class="screen hidden">
     <div id="streetview"></div>
     <div id="pano-loading" class="pano-loading hidden">Panorama wird geladen …</div>
+    <button id="report-button" class="report-button">⚑ Bild melden</button>
 
     <div id="hud">
       <span id="hud-player"></span>
@@ -108,7 +109,21 @@
     </div>
   </section>
 
+  <!-- POPUP: Bild melden, ueberlagert unabhaengig vom aktiven Screen -->
+  <div id="report-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3>Bild melden</h3>
+      <p class="modal-explainer">Meldet dieses Panorama: zu einfach erraten oder unmöglich zu lösen.</p>
+      <button id="report-too-easy" class="btn-secondary">Zu einfach</button>
+      <button id="report-impossible" class="btn-secondary">Unmöglich</button>
+      <button id="report-cancel" class="btn-link">Abbrechen</button>
+    </div>
+  </div>
+
   <script src="config.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
   <script src="script.js"></script>
   <script>
     // Google Maps JS API erst nach dem Laden der eigenen Skripte einbinden,
