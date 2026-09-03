@@ -117,13 +117,12 @@ GitHub-Pages-Domain. Für lokales Testen mit Panoramen muss
 
 ## 4. Cloud-Landschaft
 
-Drei Google-Cloud-Projekte, historisch gewachsen:
+Zwei Google-Cloud-Projekte:
 
 | Projekt | Rolle | Aktion |
 |---|---|---|
 | `weltenraten` | Maps JavaScript API + Street View Static API, API-Key (endet auf `…LsW0Pg`) | behalten |
 | `weltquiz-ebfcd` | Firebase/Firestore – **alle Spieldaten** | behalten, niemals löschen |
-| `weltquiz` | vermutlich leer, Namensrest | prüfen, dann löschen |
 
 Abrechnung: Google-Cloud-Testguthaben (300 USD / 241 CHF, 90 Tage ab Anfang
 September 2026). Firebase läuft auf dem Spark-Tarif ohne Zahlungsmittel und
@@ -197,16 +196,7 @@ Freikontingent gezählt, löst schon normales Spielen aus – 25
 Panoramaladungen entsprechen brutto rund 0.35 USD. Ein 1-CHF-Budget
 produziert damit Fehlalarme, an die man sich gewöhnt.
 
-### 5.4 Projekt `weltquiz` aufräumen – Priorität niedrig
-
-Erst prüfen, dass wirklich nichts drin ist – APIs mit Traffic,
-Firestore-Datenbank. **Vorher sicherstellen, dass es nicht `weltquiz-ebfcd`
-ist**, dort liegen alle Spieldaten; im Projektwähler heissen beide
-"Weltquiz", nur die ID unterscheidet sie. Danach IAM & Verwaltung →
-Einstellungen → Projekt herunterfahren. Google löscht erst nach 30 Tagen
-endgültig.
-
-### 5.5 Optional: Maps-Key ins Firebase-Projekt umziehen
+### 5.4 Optional: Maps-Key ins Firebase-Projekt umziehen
 
 Damit alles in einem Projekt liegt. Im Projekt `weltquiz-ebfcd` beide
 Maps-APIs aktivieren, neuen Key mit denselben Einschränkungen anlegen, in
@@ -217,7 +207,7 @@ den alten Key löschen.
 Firebase wechselt damit von Spark auf Blaze und verliert seinen
 Nulltarif-Schutz. Kein Muss.
 
-### 5.6 Offen zur Entscheidung: automatischer Not-Aus
+### 5.5 Offen zur Entscheidung: automatischer Not-Aus
 
 Da 5.2 nicht existiert, wäre die einzige harte Bremse selbstgebaut:
 Budget-Alert → Pub/Sub → Cloud Function, die die Abrechnung des Projekts
