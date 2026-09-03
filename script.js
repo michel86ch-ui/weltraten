@@ -132,8 +132,8 @@ window.initApp = initApp;
 // ---------------------------------------------------------------
 async function loadData() {
   const [locRes, centRes] = await Promise.all([
-    fetch('locations.json'),
-    fetch('country-centroids.json'),
+    fetch('locations.json?v=5'),
+    fetch('country-centroids.json?v=5'),
   ]);
   locations = await locRes.json();
   centroids = await centRes.json();
