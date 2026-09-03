@@ -520,8 +520,8 @@
   },
   {
     "id": "ch-baar",
-    "lat": 47.1962,
-    "lng": 8.5273,
+    "lat": 47.1946,
+    "lng": 8.5256,
     "country": "Schweiz",
     "place": "Baar"
   },
@@ -562,8 +562,8 @@
   },
   {
     "id": "ch-locarno",
-    "lat": 46.167,
-    "lng": 8.7943,
+    "lat": 46.1701,
+    "lng": 8.7975,
     "country": "Schweiz",
     "place": "Locarno"
   },
@@ -1405,8 +1405,8 @@
   },
   {
     "id": "lt-klaipeda",
-    "lat": 55.7033,
-    "lng": 21.1443,
+    "lat": 55.7075,
+    "lng": 21.1354,
     "country": "Litauen"
   },
   {
@@ -1446,8 +1446,8 @@
   },
   {
     "id": "ch-luzern2",
-    "lat": 47.0578,
-    "lng": 8.3106,
+    "lat": 47.0505,
+    "lng": 8.307,
     "country": "Schweiz",
     "place": "Luzern"
   },

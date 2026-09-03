@@ -79,6 +79,7 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const leaderboardShareButton = document.getElementById('leaderboard-share-button');
 const leaderboardBackButton = document.getElementById('leaderboard-back-button');
 
+const adminList = document.getElementById('admin-list');
 const adminOutput = document.getElementById('admin-output');
 const adminCopyButton = document.getElementById('admin-copy-button');
 const adminBackButton = document.getElementById('admin-back-button');
@@ -311,19 +312,27 @@ async function reportLocation(location, reason) {
 // erreichbar, nicht verlinkt). Fasst alle Meldungen pro Ort
 // zusammen und stellt sie als kopierbaren Text dar.
 // ---------------------------------------------------------------
+async function markResolved(locationId) {
+  await db.collection('resolved').doc(locationId).set({
+    ts: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
 async function showAdminFlagsScreen() {
   showScreen(adminScreen);
-  adminOutput.value = 'Lade …';
+  adminList.innerHTML = 'Lade …';
+  adminOutput.value = '';
 
   try {
-    const snap = await db.collection('flags').get();
-    if (snap.empty) {
-      adminOutput.value = 'Keine Meldungen vorhanden.';
-      return;
-    }
+    const [flagsSnap, resolvedSnap] = await Promise.all([
+      db.collection('flags').get(),
+      db.collection('resolved').get(),
+    ]);
+
+    const resolvedIds = new Set(resolvedSnap.docs.map((d) => d.id));
 
     const byLocation = new Map();
-    snap.forEach((doc) => {
+    flagsSnap.forEach((doc) => {
       const d = doc.data();
       const key = d.locationId || '(unbekannt)';
       if (!byLocation.has(key)) {
@@ -339,23 +348,60 @@ async function showAdminFlagsScreen() {
       else if (d.reason === 'impossible') entry.impossible += 1;
     });
 
-    const rows = [...byLocation.values()].sort(
+    const all = [...byLocation.values()].sort(
       (a, b) => b.too_easy + b.impossible - (a.too_easy + a.impossible)
     );
+    const active = all.filter((r) => !resolvedIds.has(r.locationId));
+    const resolvedCount = all.length - active.length;
 
-    adminOutput.value =
-      `${rows.length} gemeldete Orte, ${snap.size} Meldungen total\n\n` +
-      rows
+    if (active.length === 0) {
+      adminList.innerHTML = '<p class="mp-list-empty">Keine offenen Meldungen.</p>';
+    } else {
+      adminList.innerHTML = active
         .map(
           (r) =>
-            `${r.locationId} | ${r.label} | zu einfach: ${r.too_easy} | unmöglich: ${r.impossible}`
+            `<div class="admin-entry"><div><strong>${escapeHtml(r.locationId)}</strong> – ${escapeHtml(
+              r.label
+            )}<br><span class="admin-entry-status">zu einfach: ${r.too_easy} · unmöglich: ${
+              r.impossible
+            }</span></div><button data-id="${escapeHtml(r.locationId)}">Erledigt</button></div>`
         )
-        .join('\n');
+        .join('');
+    }
+
+    adminOutput.value = active.length
+      ? active
+          .map(
+            (r) =>
+              `${r.locationId} | ${r.label} | zu einfach: ${r.too_easy} | unmöglich: ${r.impossible}`
+          )
+          .join('\n')
+      : '';
+
+    if (resolvedCount > 0) {
+      adminList.innerHTML += `<p class="mp-list-heading">${resolvedCount} bereits erledigt (ausgeblendet)</p>`;
+    }
   } catch (e) {
     console.error('Meldungen konnten nicht geladen werden:', e);
-    adminOutput.value = 'Fehler beim Laden. Firestore-Regeln geprüft?';
+    adminList.innerHTML = '<p class="mp-list-empty">Fehler beim Laden. Firestore-Regeln geprüft?</p>';
   }
 }
+
+adminList.addEventListener('click', async (event) => {
+  const btn = event.target.closest('button[data-id]');
+  if (!btn) return;
+  const locationId = btn.dataset.id;
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    await markResolved(locationId);
+    showAdminFlagsScreen();
+  } catch (e) {
+    console.error('Konnte nicht als erledigt markiert werden:', e);
+    btn.disabled = false;
+    btn.textContent = 'Erledigt';
+  }
+});
 
 adminCopyButton.addEventListener('click', async () => {
   try {

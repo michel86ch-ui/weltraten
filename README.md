@@ -146,6 +146,11 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
                        && request.resource.data.reason in ['too_easy', 'impossible'];
          allow update, delete: if false;
        }
+       match /resolved/{locationId} {
+         allow read: if true;
+         allow create: if request.resource.data.keys().hasOnly(['ts']);
+         allow update, delete: if false;
+       }
        match /{document=**} {
          allow read, write: if false;
        }
@@ -182,9 +187,18 @@ unter `https://<dein-username>.github.io/<repo-name>/` erreichbar.
 
    **"Bild melden"-Funktion:** Im Spiel gibt's oben rechts einen Button
    "⚑ Bild melden" (nur während einer laufenden Runde sichtbar). Meldungen
-   landen in der Sammlung `flags` (Firestore → Daten → `flags`) mit
-   Orts-ID, Land/Ort und Grund ("zu einfach" / "unmöglich") – dort
-   regelmässig reinschauen und auffällige Orte in `locations.json` ersetzen.
+   landen in der Sammlung `flags` mit Orts-ID, Land/Ort und Grund ("zu
+   einfach" / "unmöglich").
+
+   **Admin-Ansicht:** `<url>/?admin=flags` (nicht verlinkt, aber ohne Login
+   erreichbar) zeigt alle gemeldeten Orte gruppiert, meistgemeldete zuerst,
+   plus "Text kopieren"-Button. Nach dem Korrigieren eines Orts in
+   `locations.json` (Koordinaten ändern, `id` beibehalten - siehe oben)
+   auf **"Erledigt"** tippen: das legt einen Eintrag in der Sammlung
+   `resolved` an, danach taucht der Ort nicht mehr in der aktiven Liste auf.
+   Die rohen `flags`-Einträge bleiben dabei unverändert erhalten (kein
+   Löschen, nur Ausblenden in der Ansicht) - `resolved` markiert nur, was
+   schon bearbeitet wurde.
 
 
 
