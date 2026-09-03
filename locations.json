@@ -1534,5 +1534,40 @@
     "lng": 7.365421,
     "country": "Schweiz",
     "place": "Diessbach bei Büren"
+  },
+  {
+    "id": "ch-eggiwil",
+    "lat": 46.85323,
+    "lng": 7.817962,
+    "country": "Schweiz",
+    "place": "Eggiwil"
+  },
+  {
+    "id": "ch-eggiwil2",
+    "lat": 46.857347,
+    "lng": 7.809675,
+    "country": "Schweiz",
+    "place": "Eggiwil"
+  },
+  {
+    "id": "ch-eggiwil3",
+    "lat": 46.864331,
+    "lng": 7.790456,
+    "country": "Schweiz",
+    "place": "Eggiwil"
+  },
+  {
+    "id": "ch-biel2",
+    "lat": 47.132062,
+    "lng": 7.253005,
+    "country": "Schweiz",
+    "place": "Biel/Bienne"
+  },
+  {
+    "id": "ch-biel3",
+    "lat": 47.132565,
+    "lng": 7.233239,
+    "country": "Schweiz",
+    "place": "Biel/Bienne"
   }
 ]
