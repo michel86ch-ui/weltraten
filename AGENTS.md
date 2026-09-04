@@ -238,7 +238,7 @@ sed -i 's/?v=8/?v=9/g' index.html script.js
 ```
 
 Die Nummer steht in `index.html` (script-/link-Tags) und in `script.js`
-(die beiden `fetch`-Aufrufe). Aktueller Stand: **v=8**.
+(die beiden `fetch`-Aufrufe). Aktueller Stand: **v=9**.
 
 Vor jedem Push prüfen:
 

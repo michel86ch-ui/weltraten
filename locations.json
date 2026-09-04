@@ -223,8 +223,8 @@
   },
   {
     "id": "vn-hanoi",
-    "lat": 21.0285,
-    "lng": 105.8542,
+    "lat": 21.0367,
+    "lng": 105.8347,
     "country": "Vietnam"
   },
   {
@@ -555,8 +555,8 @@
   },
   {
     "id": "ch-bellinzona",
-    "lat": 46.1944,
-    "lng": 9.0175,
+    "lat": 46.1927,
+    "lng": 9.0244,
     "country": "Schweiz",
     "place": "Bellinzona"
   },
@@ -632,8 +632,8 @@
   },
   {
     "id": "ch-grindelwald",
-    "lat": 46.6244,
-    "lng": 8.0413,
+    "lat": 46.6172,
+    "lng": 8.0272,
     "country": "Schweiz",
     "place": "Grindelwald"
   },
@@ -1099,8 +1099,8 @@
   },
   {
     "id": "se-gothenburg",
-    "lat": 57.7089,
-    "lng": 11.9746,
+    "lat": 57.6995,
+    "lng": 11.9793,
     "country": "Schweden"
   },
   {
